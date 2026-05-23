@@ -85,6 +85,68 @@
             </div>
         </div>
 
+        <!-- Mobile Settings Button (visible < 768px only) -->
+        <button class="mobile-settings-btn" id="mobileSettingsBtn" onclick="openSettingsDrawer()">⚙️</button>
+
+        <!-- Mobile Settings Drawer -->
+        <div class="settings-drawer-overlay" id="settingsDrawerOverlay" onclick="closeSettingsDrawer()"></div>
+        <div class="settings-drawer" id="settingsDrawer">
+            <div class="settings-drawer-handle"></div>
+            <div class="settings-drawer-title">Settings</div>
+            <div class="settings-drawer-controls">
+                <div class="drawer-control-group">
+                    <label>Time</label>
+                    <div class="pill-select-wrapper">
+                        <select id="drawerTimeSelect" class="pill-select" onchange="syncDrawerControl('time')">
+                        </select>
+                    </div>
+                </div>
+                <div class="drawer-control-group">
+                    <label>Day</label>
+                    <div class="pill-select-wrapper">
+                        <select id="drawerDaySelect" class="pill-select" onchange="syncDrawerControl('day')">
+                            <option value="0">📅 Monday</option>
+                            <option value="1" selected>📅 Tuesday</option>
+                            <option value="2">📅 Wednesday</option>
+                            <option value="3">📅 Thursday</option>
+                            <option value="4">📅 Friday</option>
+                            <option value="5">📅 Saturday</option>
+                            <option value="6">📅 Sunday</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="drawer-control-group">
+                    <label>Weather</label>
+                    <div class="pill-select-wrapper">
+                        <select id="drawerWeatherSelect" class="pill-select" onchange="syncDrawerControl('weather')">
+                            <option value="clear">🌤 Clear</option>
+                            <option value="rain">🌧 Rain</option>
+                            <option value="fog">🌫 Fog</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="drawer-control-group">
+                    <label>Heatmap</label>
+                    <button id="drawerHeatmapBtn" class="pill-btn" onclick="toggleHeatmap(); syncDrawerHeatmap()">🔥 Heatmap</button>
+                </div>
+                <div class="drawer-control-group">
+                    <label>Algorithm</label>
+                    <div class="pill-select-wrapper">
+                        <select id="drawerAlgorithmSelect" class="pill-select" onchange="syncDrawerControl('algorithm')">
+                            <option value="dijkstra">🧮 Dijkstra</option>
+                            <option value="rl">🤖 Q-Learning RL</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <button class="drawer-apply-btn" onclick="applyAndCloseDrawer()">Apply & Close</button>
+        </div>
+
+        <!-- Traffic Warning Banner (driver mode) -->
+        <div class="traffic-warning-banner" id="trafficWarningBanner" style="display:none;">
+            ⚠️ Heavy traffic ahead — route already optimized
+        </div>
+
         <!-- Legend -->
         <div class="legend-overlay">
             <div class="legend-item"><span class="legend-dot dot-low"></span> Low</div>
@@ -1427,7 +1489,8 @@
                 methodBadge.style.background = "linear-gradient(135deg, #3b82f6, #2563eb)";
             }
 
-            document.getElementById("routeTime").innerHTML = `${routeData.total_time.toFixed(0)} <span>min</span>`;
+            const distKm = getRouteDistanceKm(routeData.path);
+            document.getElementById("routeTime").innerHTML = `${routeData.total_time.toFixed(0)} <span>min</span> <span class="route-distance-dot">•</span> <span class="route-distance">${distKm} km</span>`;
 
             // Breadcrumb path
             const pathHtml = routeData.path.map((n, i) => {
@@ -1481,12 +1544,13 @@
                     const isActive = selectedAltRouteIdx === actualIdx ? "active" : "";
                     const altPathStr = alt.path.join(" → ");
 
+                    const altDistKm = getRouteDistanceKm(alt.path);
                     altContainer.innerHTML += `
                         <div class="alt-card ${isActive}" onclick="selectAlternative(${actualIdx})">
                             <div class="alt-card-header">
                                 <div class="alt-info">
                                     <span class="alt-name">Alternative ${actualIdx}</span>
-                                    <span class="alt-time">${alt.total_time.toFixed(1)} min</span>
+                                    <span class="alt-time">${alt.total_time.toFixed(1)} min  •  ${altDistKm} km</span>
                                 </div>
                                 <span class="cong-badge ${badgeClass}">${badgeText}</span>
                             </div>
@@ -1498,12 +1562,16 @@
                 saveLine.textContent = "";
                 altContainer.innerHTML = '<div class="alt-empty">No alternatives found.</div>';
             }
+
+            // Show traffic warning if any segment congestion > 0.7
+            updateTrafficWarning(routeData);
         }
 
         function resetResultUI() {
             document.getElementById("resultPlaceholder").style.display = "flex";
             document.getElementById("resultContent").style.display = "none";
             document.getElementById("altList").innerHTML = '<div class="alt-empty">No alternatives calculated.</div>';
+            document.getElementById('trafficWarningBanner').style.display = 'none';
         }
 
         // ============================================
@@ -1648,6 +1716,95 @@
         }
 
         // ============================================
+        // ROUTE DISTANCE
+        // ============================================
+        function getRouteDistanceKm(routeNodes) {
+            let totalMeters = 0;
+            for (let i = 0; i < routeNodes.length - 1; i++) {
+                const n1 = NASHIK_NODES[routeNodes[i]];
+                const n2 = NASHIK_NODES[routeNodes[i+1]];
+                if (!n1 || !n2) continue;
+                totalMeters += L.latLng(n1[0], n1[1])
+                                .distanceTo(L.latLng(n2[0], n2[1]));
+            }
+            return (totalMeters / 1000).toFixed(1);
+        }
+
+        // ============================================
+        // TRAFFIC WARNING (driver mode)
+        // ============================================
+        function updateTrafficWarning(routeData) {
+            const banner = document.getElementById('trafficWarningBanner');
+            if (!routeData || !routeData.segments) {
+                banner.style.display = 'none';
+                return;
+            }
+            const hasHeavy = routeData.segments.some(s => s.congestion_score > 0.7);
+            banner.style.display = hasHeavy ? 'flex' : 'none';
+        }
+
+        // ============================================
+        // MOBILE SETTINGS DRAWER
+        // ============================================
+        function openSettingsDrawer() {
+            // Sync drawer controls from main controls
+            document.getElementById('drawerTimeSelect').value = document.getElementById('timeSelect').value;
+            document.getElementById('drawerDaySelect').value = document.getElementById('daySelect').value;
+            document.getElementById('drawerWeatherSelect').value = document.getElementById('weatherSelect').value;
+            document.getElementById('drawerAlgorithmSelect').value = document.getElementById('algorithmSelect').value;
+            syncDrawerHeatmap();
+
+            document.getElementById('settingsDrawer').classList.add('open');
+            document.getElementById('settingsDrawerOverlay').classList.add('open');
+        }
+
+        function closeSettingsDrawer() {
+            document.getElementById('settingsDrawer').classList.remove('open');
+            document.getElementById('settingsDrawerOverlay').classList.remove('open');
+        }
+
+        function syncDrawerControl(type) {
+            if (type === 'time') {
+                document.getElementById('timeSelect').value = document.getElementById('drawerTimeSelect').value;
+            } else if (type === 'day') {
+                document.getElementById('daySelect').value = document.getElementById('drawerDaySelect').value;
+            } else if (type === 'weather') {
+                document.getElementById('weatherSelect').value = document.getElementById('drawerWeatherSelect').value;
+            } else if (type === 'algorithm') {
+                document.getElementById('algorithmSelect').value = document.getElementById('drawerAlgorithmSelect').value;
+            }
+        }
+
+        function syncDrawerHeatmap() {
+            const drawerBtn = document.getElementById('drawerHeatmapBtn');
+            if (heatmapActive) {
+                drawerBtn.classList.add('active');
+            } else {
+                drawerBtn.classList.remove('active');
+            }
+        }
+
+        function applyAndCloseDrawer() {
+            // Sync all drawer values to main controls
+            syncDrawerControl('time');
+            syncDrawerControl('day');
+            syncDrawerControl('weather');
+            syncDrawerControl('algorithm');
+            handleControlChange();
+            closeSettingsDrawer();
+        }
+
+        function populateDrawerTimeSelect() {
+            const select = document.getElementById('drawerTimeSelect');
+            for (let i = 0; i < 24; i++) {
+                const ampm = i >= 12 ? 'PM' : 'AM';
+                const hr = i % 12 === 0 ? 12 : i % 12;
+                select.add(new Option(`🕐 Time: ${hr} ${ampm}`, i));
+            }
+            select.value = "8";
+        }
+
+        // ============================================
         // BOOT
         // ============================================
         window.addEventListener("DOMContentLoaded", () => {
@@ -1655,6 +1812,7 @@
             setupSearchListeners();
             loadInitialData();
             updateLiveClock();
+            populateDrawerTimeSelect();
 
             // Live clock update every second
             setInterval(updateLiveClock, 1000);

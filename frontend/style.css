@@ -1143,6 +1143,185 @@ body {
 /* ========================
    10. Responsive
    ======================== */
+/* ========================
+   Route Distance Display
+   ======================== */
+.route-distance-dot {
+    font-size: 18px;
+    color: var(--text-hint);
+    font-weight: 400;
+    margin: 0 2px;
+}
+
+.route-distance {
+    font-size: 18px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* ========================
+   Mobile Settings Button
+   ======================== */
+.mobile-settings-btn {
+    display: none; /* hidden on desktop */
+    position: absolute;
+    top: 10px;
+    right: 60px;
+    z-index: 1001;
+    background: rgba(17, 17, 17, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: var(--shadow-card);
+    color: var(--text-primary);
+    transition: var(--transition);
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-settings-btn:hover {
+    background: var(--bg-hover);
+}
+
+/* ========================
+   Settings Drawer Overlay
+   ======================== */
+.settings-drawer-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2999;
+}
+
+.settings-drawer-overlay.open {
+    display: block;
+}
+
+/* ========================
+   Settings Drawer
+   ======================== */
+.settings-drawer {
+    display: none; /* hidden on desktop */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border-subtle);
+    border-radius: 20px 20px 0 0;
+    z-index: 3000;
+    padding: 16px 20px 28px;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+    flex-direction: column;
+    gap: 16px;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+.settings-drawer.open {
+    transform: translateY(0);
+}
+
+.settings-drawer-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--text-hint);
+    border-radius: 2px;
+    margin: 0 auto 8px;
+}
+
+.settings-drawer-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.settings-drawer-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.drawer-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.drawer-control-group label {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.drawer-control-group .pill-select,
+.drawer-control-group .pill-btn {
+    width: 100%;
+    text-align: left;
+}
+
+.drawer-apply-btn {
+    width: 100%;
+    background: var(--accent-blue);
+    color: var(--text-primary);
+    border: none;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    font-family: var(--font-main);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    margin-top: 4px;
+}
+
+.drawer-apply-btn:hover {
+    background: #2563eb;
+}
+
+/* ========================
+   Traffic Warning Banner
+   ======================== */
+.traffic-warning-banner {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1001;
+    background: rgba(239, 68, 68, 0.15);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    padding: 10px 20px;
+    border-radius: var(--radius-lg);
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
+    white-space: nowrap;
+    animation: fadeIn 0.3s ease;
+}
+
+/* ========================
+   10. Responsive
+   ======================== */
 @media (max-width: 768px) {
     body, html {
         overflow-y: auto;
@@ -1181,13 +1360,19 @@ body {
         border-bottom: 1px solid var(--border-subtle);
     }
 
+    /* Hide desktop control pills on mobile */
     .controls-overlay {
-        top: 56px;
-        right: 10px;
-        left: 10px;
-        justify-content: flex-end;
-        flex-wrap: wrap;
-        gap: 6px;
+        display: none !important;
+    }
+
+    /* Show mobile settings button */
+    .mobile-settings-btn {
+        display: flex;
+    }
+
+    /* Enable the drawer on mobile */
+    .settings-drawer {
+        display: flex;
     }
 
     .top-bar {
@@ -1219,5 +1404,17 @@ body {
 
     .time-display span {
         font-size: 16px;
+    }
+
+    /* Position mobile settings button away from clock */
+    .mobile-settings-btn {
+        right: 56px;
+        top: 10px;
+    }
+
+    .traffic-warning-banner {
+        bottom: 10px;
+        font-size: 11px;
+        padding: 8px 14px;
     }
 }
