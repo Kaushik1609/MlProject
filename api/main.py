@@ -13,6 +13,7 @@ map to ML-predicted congestion scores from the XGBoost model.
 """
 
 import os
+import sys
 import numpy as np
 import networkx as nx
 import joblib
@@ -22,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from collections import defaultdict
 
 # ---------------------------------------------------------------
 # App Initialization
@@ -59,6 +61,34 @@ except Exception as e:
     print("Run ml/train_model.py first!")
     ml_model = None
     weather_encoder = None
+
+# ---------------------------------------------------------------
+# Load RL Q-Table (q_table.pkl)
+# ---------------------------------------------------------------
+Q_TABLE_PATH = os.path.join(BASE_DIR, "ml", "q_table.pkl")
+RL_ENV_AVAILABLE = False
+
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+try:
+    from ml.rl_env import (
+        NashikRoutingEnv, NODE_TO_IDX, IDX_TO_NODE,
+        ADJACENCY, WEATHER_MAP, time_to_bucket,
+    )
+    RL_ENV_AVAILABLE = True
+except ImportError as e:
+    print(f"[WARN] ml.rl_env not importable — RL routing disabled: {e}")
+
+q_table = None
+try:
+    if os.path.exists(Q_TABLE_PATH):
+        q_table = joblib.load(Q_TABLE_PATH)
+        print(f"[OK] RL Q-table loaded from {Q_TABLE_PATH}")
+    else:
+        print(f"[INFO] Q-table not found at {Q_TABLE_PATH} — run ml/train_rl.py")
+except Exception as e:
+    print(f"[WARN] Failed to load Q-table: {e}")
 
 # ---------------------------------------------------------------
 # Nashik City Road Network -- Node Definitions
@@ -257,6 +287,108 @@ def find_optimal_route(
     return {"path": path, "total_time": round(total_time, 2), "segments": segments}
 
 
+# ---------------------------------------------------------------
+# RL-Based Route Optimization
+# ---------------------------------------------------------------
+def find_optimal_route_rl(
+    source: str, destination: str,
+    time_of_day: int, day_of_week: int, weather: str,
+):
+    """
+    Find the optimal route using the trained Q-learning agent.
+    The agent greedily follows the best Q-values from source to
+    destination.
+    """
+    if q_table is None or not RL_ENV_AVAILABLE:
+        return None
+
+    if source not in NODE_TO_IDX or destination not in NODE_TO_IDX:
+        return None
+
+    src_idx = NODE_TO_IDX[source]
+    dst_idx = NODE_TO_IDX[destination]
+    tb = time_to_bucket(time_of_day)
+    wi = WEATHER_MAP.get(weather, 0)
+
+    # Refresh edge weights for travel time computation
+    _update_edge_weights(time_of_day, day_of_week, weather)
+
+    current = src_idx
+    path = [source]
+    total_time = 0.0
+    segments = []
+    visited = {src_idx}
+    max_steps = 20
+
+    for _ in range(max_steps):
+        if current == dst_idx:
+            break
+
+        state = (current, dst_idx, tb, wi)
+        neighbours = ADJACENCY[current]
+        n_actions = len(neighbours)
+
+        if n_actions == 0:
+            break
+
+        # Greedy action selection from Q-table
+        q_vals = [
+            q_table.get(state, {}).get(a, 0.0)
+            for a in range(n_actions)
+        ]
+        action = int(np.argmax(q_vals))
+
+        next_node, seg_id, base_time = neighbours[action]
+
+        # Look up edge in the graph for travel time info
+        from_name = IDX_TO_NODE[current]
+        to_name = IDX_TO_NODE[next_node]
+
+        # Get the edge data from the NetworkX graph
+        if graph.has_edge(from_name, to_name):
+            edge = graph[from_name][to_name]
+        else:
+            edge = {
+                "road_name": f"Road {seg_id}",
+                "segment_id": seg_id,
+                "base_travel_time": base_time,
+                "congestion_score": 0.3,
+                "effective_travel_time": base_time * 1.3,
+            }
+
+        eff_time = edge.get("effective_travel_time", base_time * 1.3)
+        cong = edge.get("congestion_score", 0.3)
+        total_time += eff_time
+
+        segments.append({
+            "from": from_name,
+            "to": to_name,
+            "road_name": edge.get("road_name", f"Road {seg_id}"),
+            "segment_id": edge.get("segment_id", seg_id),
+            "base_travel_time": edge.get("base_travel_time", base_time),
+            "congestion_score": cong,
+            "effective_travel_time": eff_time,
+            "effective_time": eff_time,
+            "geometry": edge.get("geometry", []),
+            "landmarks": edge.get("landmarks", []),
+        })
+
+        path.append(to_name)
+        visited.add(next_node)
+        current = next_node
+
+    # Check if destination was reached
+    if current != dst_idx:
+        return None
+
+    return {
+        "path": path,
+        "total_time": round(total_time, 2),
+        "segments": segments,
+        "method": "reinforcement_learning",
+    }
+
+
 def find_k_shortest_routes(
     source: str, destination: str,
     time_of_day: int, day_of_week: int, weather: str,
@@ -317,6 +449,7 @@ class RouteRequest(BaseModel):
     time_of_day: int = Field(..., ge=0, le=23, description="Hour of day (0-23)")
     day_of_week: int = Field(..., ge=0, le=6, description="Day of week (0=Mon, 6=Sun)")
     weather: str = Field(..., description="Weather: clear, rain, or fog")
+    method: str = Field("dijkstra", description="Routing method: 'dijkstra' or 'rl'")
 
 
 # ---------------------------------------------------------------
@@ -326,17 +459,39 @@ class RouteRequest(BaseModel):
 def optimize_route_endpoint(req: RouteRequest):
     """
     Find the single best route between two intersections.
-    Uses Dijkstra over ML-predicted congestion weights.
+    Supports two methods:
+      - 'dijkstra' (default): Dijkstra over ML-predicted congestion weights
+      - 'rl': Reinforcement Learning agent (Q-learning)
     """
     if req.source not in NODES or req.destination not in NODES:
         return {"error": "Invalid source or destination node"}
     if req.source == req.destination:
         return {"error": "Source and destination must be different"}
 
-    result = find_optimal_route(
-        req.source, req.destination,
-        req.time_of_day, req.day_of_week, req.weather,
-    )
+    result = None
+    method_used = req.method.lower()
+
+    if method_used == "rl":
+        result = find_optimal_route_rl(
+            req.source, req.destination,
+            req.time_of_day, req.day_of_week, req.weather,
+        )
+        if result is None:
+            # Fall back to Dijkstra if RL fails
+            result = find_optimal_route(
+                req.source, req.destination,
+                req.time_of_day, req.day_of_week, req.weather,
+            )
+            if result:
+                result["method"] = "dijkstra_fallback"
+    else:
+        result = find_optimal_route(
+            req.source, req.destination,
+            req.time_of_day, req.day_of_week, req.weather,
+        )
+        if result:
+            result["method"] = "dijkstra"
+
     if result is None:
         return {"error": "No path found between the selected nodes"}
     return result
@@ -408,6 +563,17 @@ def all_routes(
 def get_nodes():
     """Return all intersection nodes with their GPS coordinates."""
     return {"nodes": NODES}
+
+
+@app.get("/rl-status")
+def rl_status():
+    """Check if the RL agent is loaded and available."""
+    return {
+        "rl_available": q_table is not None and RL_ENV_AVAILABLE,
+        "q_table_loaded": q_table is not None,
+        "q_table_entries": len(q_table) if q_table else 0,
+        "rl_env_available": RL_ENV_AVAILABLE,
+    }
 
 
 import math

@@ -9,7 +9,7 @@ import numpy as np
 import os
 
 # --- Road Segment Definitions ---
-# Each segment corresponds to an edge in the Pune road network graph
+# Each segment corresponds to an edge in the Nashik road network graph
 ROAD_SEGMENTS = {
     1: 'MG Road', 2: 'Sharanpur Road', 3: 'CBS-Canada Road', 4: 'Old Pune Road',
     5: 'Panchavati Road', 6: 'College Road', 7: 'Gangapur Road', 8: 'Indira Nagar Road',

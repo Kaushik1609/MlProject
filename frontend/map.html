@@ -77,6 +77,12 @@
                     <option value="fog">🌫 Fog</option>
                 </select>
             </div>
+            <div class="pill-select-wrapper">
+                <select id="algorithmSelect" class="pill-select">
+                    <option value="dijkstra">🧮 Dijkstra</option>
+                    <option value="rl">🤖 Q-Learning RL</option>
+                </select>
+            </div>
         </div>
 
         <!-- Legend -->
@@ -131,7 +137,8 @@
                 Search locations to find optimal route
             </div>
             <div id="resultContent" class="result-content">
-                <span class="optimal-badge">OPTIMAL ROUTE</span>
+                <span class="optimal-badge" id="routeBadge">OPTIMAL ROUTE</span>
+                <span class="method-badge" id="methodBadge" style="display:none;"></span>
                 <div id="routeTime" class="time-display">-- <span>min</span></div>
                 <div id="routePath" class="breadcrumb-path"></div>
                 <div id="routeVia" class="via-line"></div>
@@ -250,6 +257,9 @@
 
         // Traffic data indexed by segment_id
         let trafficMap = {};
+
+        // RL agent availability flag
+        let rlAvailable = false;
 
         // ============================================
         // INITIALIZATION
@@ -1334,7 +1344,8 @@
                             destination: dest,
                             time_of_day: parseInt(time),
                             day_of_week: parseInt(day),
-                            weather
+                            weather,
+                            method: document.getElementById("algorithmSelect").value
                         })
                     });
                     const apiData = await res.json();
@@ -1391,6 +1402,30 @@
         function renderUI(routeData, allRoutesData) {
             document.getElementById("resultPlaceholder").style.display = "none";
             document.getElementById("resultContent").style.display = "block";
+
+            // Show method badge
+            const methodBadge = document.getElementById("methodBadge");
+            const routeBadge = document.getElementById("routeBadge");
+            const method = routeData.method || "dijkstra";
+            if (method === "reinforcement_learning") {
+                routeBadge.textContent = "RL ROUTE";
+                routeBadge.style.background = "linear-gradient(135deg, #8b5cf6, #6d28d9)";
+                methodBadge.textContent = "🤖 Q-Learning Agent";
+                methodBadge.style.display = "inline-block";
+                methodBadge.style.background = "linear-gradient(135deg, #7c3aed, #5b21b6)";
+            } else if (method === "dijkstra_fallback") {
+                routeBadge.textContent = "OPTIMAL ROUTE";
+                routeBadge.style.background = "";
+                methodBadge.textContent = "⚠️ RL fallback → Dijkstra";
+                methodBadge.style.display = "inline-block";
+                methodBadge.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
+            } else {
+                routeBadge.textContent = "OPTIMAL ROUTE";
+                routeBadge.style.background = "";
+                methodBadge.textContent = "🧮 Dijkstra";
+                methodBadge.style.display = "inline-block";
+                methodBadge.style.background = "linear-gradient(135deg, #3b82f6, #2563eb)";
+            }
 
             document.getElementById("routeTime").innerHTML = `${routeData.total_time.toFixed(0)} <span>min</span>`;
 
@@ -1626,7 +1661,30 @@
 
             // Auto-refresh traffic every 30 seconds
             setInterval(silentRefreshTraffic, 30000);
+
+            // Check RL availability
+            checkRLStatus();
         });
+
+        async function checkRLStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/rl-status`);
+                const data = await res.json();
+                rlAvailable = data.rl_available;
+                const rlOption = document.querySelector('#algorithmSelect option[value="rl"]');
+                if (rlOption) {
+                    if (!rlAvailable) {
+                        rlOption.textContent = '🤖 Q-Learning RL (not trained)';
+                        rlOption.disabled = true;
+                    } else {
+                        rlOption.textContent = `🤖 Q-Learning RL (${data.q_table_entries.toLocaleString()} states)`;
+                        rlOption.disabled = false;
+                    }
+                }
+            } catch (e) {
+                // API not available — ignore
+            }
+        }
     </script>
 </body>
 </html>

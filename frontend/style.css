@@ -690,6 +690,20 @@ body {
     border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
+.method-badge {
+    display: inline-flex;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    margin-left: 8px;
+    margin-bottom: 10px;
+    border: none;
+    vertical-align: middle;
+}
+
 .time-display {
     font-size: 40px;
     font-weight: 800;
