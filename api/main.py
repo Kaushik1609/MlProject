@@ -61,54 +61,69 @@ except Exception as e:
     weather_encoder = None
 
 # ---------------------------------------------------------------
-# Pune City Road Network -- Node Definitions
+# Nashik City Road Network -- Node Definitions
 # Each node is a major intersection with real lat/lng
 # ---------------------------------------------------------------
 NODES = {
-    "Shivajinagar":     {"lat": 18.5308, "lng": 73.8474},
-    "Katraj":           {"lat": 18.4529, "lng": 73.8654},
-    "Hinjewadi":        {"lat": 18.5912, "lng": 73.7389},
-    "Wakad":            {"lat": 18.5997, "lng": 73.7601},
-    "Kothrud":          {"lat": 18.5074, "lng": 73.8077},
-    "Deccan":           {"lat": 18.5161, "lng": 73.8397},
-    "Swargate":         {"lat": 18.5018, "lng": 73.8553},
-    "Hadapsar":         {"lat": 18.5018, "lng": 73.9260},
-    "Viman Nagar":      {"lat": 18.5679, "lng": 73.9143},
-    "Magarpatta":       {"lat": 18.5117, "lng": 73.9280},
-    "FC Road":          {"lat": 18.5264, "lng": 73.8400},
-    "Baner":            {"lat": 18.5590, "lng": 73.7868},
-    "Pune Station":     {"lat": 18.5284, "lng": 73.8742},
-    "Pimpri":           {"lat": 18.6279, "lng": 73.7997},
-    "Chinchwad":        {"lat": 18.6481, "lng": 73.7946},
+    "CBS Chowk":       {"lat": 20.0059, "lng": 73.7898},
+    "Gangapur Road":   {"lat": 20.0219, "lng": 73.7677},
+    "Dwarka Circle":   {"lat": 19.9975, "lng": 73.7654},
+    "College Road":    {"lat": 20.0110, "lng": 73.7750},
+    "Nashik Road":     {"lat": 19.9801, "lng": 73.8309},
+    "Indira Nagar":    {"lat": 20.0287, "lng": 73.8012},
+    "Panchavati":      {"lat": 20.0113, "lng": 73.7654},
+    "Mhasrul":         {"lat": 20.0480, "lng": 73.8012},
+    "Satpur":          {"lat": 19.9975, "lng": 73.7450},
+    "Ambad":           {"lat": 20.0113, "lng": 73.7450},
+    "Cidco":           {"lat": 20.0000, "lng": 73.7550},
+    "Nashik Phata":    {"lat": 20.0400, "lng": 73.7750},
+    "Canada Corner":   {"lat": 20.0168, "lng": 73.7805},
+    "Sharanpur Road":  {"lat": 20.0059, "lng": 73.7700},
+    "Mumbai Naka":     {"lat": 19.9900, "lng": 73.7898},
+    "Deolali":         {"lat": 19.9500, "lng": 73.8309},
+    "Trimbak Road":    {"lat": 20.0350, "lng": 73.7600},
+    "Pathardi Phata":  {"lat": 19.9850, "lng": 73.7750},
+    "Old Agra Road":   {"lat": 20.0200, "lng": 73.8100},
+    "Commissioner Office":   {"lat": 20.0059, "lng": 73.7800},
 }
 
 EDGES = [
-    ("Hinjewadi", "Wakad", {"road_name": "Hinjewadi Link Rd", "segment_id": 1, "base_travel_time": 6, "geometry": [[18.5912, 73.7389], [18.5935, 73.7460], [18.5960, 73.7530], [18.5997, 73.7601]], "landmarks": [{"name": "Hinjewadi Phase 1", "lat": 18.5925, "lng": 73.7425}, {"name": "Wipro Circle", "lat": 18.5955, "lng": 73.7510}]}),
-    ("Wakad", "Baner", {"road_name": "Katraj Bypass Rd", "segment_id": 2, "base_travel_time": 8, "geometry": [[18.5997, 73.7601], [18.5870, 73.7570], [18.5740, 73.7650], [18.5660, 73.7740], [18.5590, 73.7868]], "landmarks": [{"name": "Balewadi Stadium", "lat": 18.5775, "lng": 73.7620}, {"name": "Radisson Corridor", "lat": 18.5680, "lng": 73.7710}]}),
-    ("Wakad", "Pimpri", {"road_name": "Kaspate Wasti Rd", "segment_id": 3, "base_travel_time": 10, "geometry": [[18.5997, 73.7601], [18.6110, 73.7750], [18.6200, 73.7890], [18.6279, 73.7997]], "landmarks": [{"name": "Dange Chowk", "lat": 18.6080, "lng": 73.7720}, {"name": "Thergaon", "lat": 18.6185, "lng": 73.7850}]}),
-    ("Pimpri", "Chinchwad", {"road_name": "Old Mumbai Hwy", "segment_id": 4, "base_travel_time": 5, "geometry": [[18.6279, 73.7997], [18.6360, 73.7960], [18.6430, 73.7930], [18.6481, 73.7946]], "landmarks": [{"name": "PCMC HQ", "lat": 18.6320, "lng": 73.7975}, {"name": "Chinchwad Station", "lat": 18.6410, "lng": 73.7940}]}),
-    ("Baner", "Shivajinagar", {"road_name": "Baner Road", "segment_id": 5, "base_travel_time": 12, "geometry": [[18.5590, 73.7868], [18.5490, 73.8050], [18.5390, 73.8240], [18.5330, 73.8360], [18.5308, 73.8474]], "landmarks": [{"name": "Baner Phata", "lat": 18.5470, "lng": 73.8110}, {"name": "SPPU Campus", "lat": 18.5360, "lng": 73.8300}]}),
-    ("Hinjewadi", "Kothrud", {"road_name": "Mulshi Bypass", "segment_id": 6, "base_travel_time": 18, "geometry": [[18.5912, 73.7389], [18.5710, 73.7420], [18.5430, 73.7610], [18.5210, 73.7780], [18.5074, 73.8077]], "landmarks": [{"name": "Bavdhan", "lat": 18.5480, "lng": 73.7580}, {"name": "Chandani Chowk", "lat": 18.5170, "lng": 73.7820}]}),
-    ("Kothrud", "Deccan", {"road_name": "Karve Road", "segment_id": 7, "base_travel_time": 7, "geometry": [[18.5074, 73.8077], [18.5090, 73.8190], [18.5125, 73.8290], [18.5161, 73.8397]], "landmarks": [{"name": "Nal Stop", "lat": 18.5085, "lng": 73.8210}, {"name": "SNDT College", "lat": 18.5110, "lng": 73.8280}]}),
-    ("Deccan", "FC Road", {"road_name": "FC Road Link", "segment_id": 8, "base_travel_time": 3, "geometry": [[18.5161, 73.8397], [18.5210, 73.8405], [18.5264, 73.8400]], "landmarks": [{"name": "Goodluck Cafe", "lat": 18.5185, "lng": 73.8402}]}),
-    ("FC Road", "Shivajinagar", {"road_name": "FC Road Upper", "segment_id": 9, "base_travel_time": 4, "geometry": [[18.5264, 73.8400], [18.5290, 73.8430], [18.5308, 73.8474]], "landmarks": [{"name": "Fergusson College", "lat": 18.5280, "lng": 73.8415}]}),
-    ("Deccan", "Swargate", {"road_name": "Tilak Road", "segment_id": 10, "base_travel_time": 8, "geometry": [[18.5161, 73.8397], [18.5120, 73.8460], [18.5070, 73.8510], [18.5018, 73.8553]], "landmarks": [{"name": "SP College", "lat": 18.5095, "lng": 73.8480}, {"name": "Alka Talkies", "lat": 18.5135, "lng": 73.8425}]}),
-    ("Kothrud", "Swargate", {"road_name": "Sinhagad Road", "segment_id": 11, "base_travel_time": 10, "geometry": [[18.5074, 73.8077], [18.4980, 73.8150], [18.4930, 73.8320], [18.5018, 73.8553]], "landmarks": [{"name": "Rajaram Bridge", "lat": 18.4975, "lng": 73.8220}, {"name": "Anand Nagar", "lat": 18.4940, "lng": 73.8300}]}),
-    ("Swargate", "Katraj", {"road_name": "Satara Road", "segment_id": 12, "base_travel_time": 12, "geometry": [[18.5018, 73.8553], [18.4870, 73.8580], [18.4720, 73.8610], [18.4529, 73.8654]], "landmarks": [{"name": "Dhankawadi", "lat": 18.4790, "lng": 73.8595}, {"name": "Balaji Nagar", "lat": 18.4680, "lng": 73.8620}]}),
-    ("Shivajinagar", "Pune Station", {"road_name": "University Road", "segment_id": 13, "base_travel_time": 5, "geometry": [[18.5308, 73.8474], [18.5320, 73.8560], [18.5310, 73.8660], [18.5284, 73.8742]], "landmarks": [{"name": "Sancheti Hospital", "lat": 18.5315, "lng": 73.8510}, {"name": "RTO Office", "lat": 18.5295, "lng": 73.8690}]}),
-    ("Pune Station", "Viman Nagar", {"road_name": "Nagar Road", "segment_id": 14, "base_travel_time": 14, "geometry": [[18.5284, 73.8742], [18.5410, 73.8880], [18.5520, 73.9010], [18.5679, 73.9143]], "landmarks": [{"name": "Bund Garden", "lat": 18.5440, "lng": 73.8920}, {"name": "Kalyani Nagar", "lat": 18.5580, "lng": 73.9060}]}),
-    ("Pune Station", "Swargate", {"road_name": "Station Link", "segment_id": 15, "base_travel_time": 9, "geometry": [[18.5284, 73.8742], [18.5200, 73.8650], [18.5110, 73.8580], [18.5018, 73.8553]], "landmarks": [{"name": "Nana Peth", "lat": 18.5160, "lng": 73.8615}, {"name": "Seven Loves Chowk", "lat": 18.5080, "lng": 73.8570}]}),
-    ("Swargate", "Hadapsar", {"road_name": "Solapur Road", "segment_id": 16, "base_travel_time": 15, "geometry": [[18.5018, 73.8553], [18.4980, 73.8740], [18.4960, 73.8960], [18.5018, 73.9260]], "landmarks": [{"name": "Fatima Nagar", "lat": 18.4990, "lng": 73.8820}, {"name": "Race Course", "lat": 18.4970, "lng": 73.9080}]}),
-    ("Hadapsar", "Magarpatta", {"road_name": "Magarpatta Road", "segment_id": 17, "base_travel_time": 4, "geometry": [[18.5018, 73.9260], [18.5070, 73.9270], [18.5117, 73.9280]], "landmarks": [{"name": "Gliding Centre", "lat": 18.5050, "lng": 73.9265}]}),
-    ("Magarpatta", "Viman Nagar", {"road_name": "Kharadi Bypass", "segment_id": 18, "base_travel_time": 10, "geometry": [[18.5117, 73.9280], [18.5320, 73.9290], [18.5510, 73.9240], [18.5679, 73.9143]], "landmarks": [{"name": "Kharadi Bypass", "lat": 18.5420, "lng": 73.9260}, {"name": "Amanora Park", "lat": 18.5230, "lng": 73.9285}]}),
-    ("Pune Station", "Magarpatta", {"road_name": "Prince Road", "segment_id": 19, "base_travel_time": 11, "geometry": [[18.5284, 73.8742], [18.5210, 73.8910], [18.5140, 73.9100], [18.5117, 73.9280]], "landmarks": [{"name": "Empress Garden", "lat": 18.5180, "lng": 73.8990}]}),
-    ("Shivajinagar", "Deccan", {"road_name": "JM Road", "segment_id": 20, "base_travel_time": 6, "geometry": [[18.5308, 73.8474], [18.5220, 73.8430], [18.5161, 73.8397]], "landmarks": [{"name": "JM Temple", "lat": 18.5240, "lng": 73.8445}]}),
+    ("CBS Chowk",     "College Road",    {"road_name": "MG Road",           "segment_id": 1,  "base_travel_time": 8,  "geometry": [], "landmarks": []}),
+    ("CBS Chowk",     "Sharanpur Road",  {"road_name": "Sharanpur Road",    "segment_id": 2,  "base_travel_time": 6,  "geometry": [], "landmarks": []}),
+    ("CBS Chowk",     "Canada Corner",   {"road_name": "CBS-Canada Road",   "segment_id": 3,  "base_travel_time": 5,  "geometry": [], "landmarks": []}),
+    ("CBS Chowk",     "Mumbai Naka",     {"road_name": "Old Pune Road",     "segment_id": 4,  "base_travel_time": 10, "geometry": [], "landmarks": []}),
+    ("CBS Chowk",     "Panchavati",      {"road_name": "Panchavati Road",   "segment_id": 5,  "base_travel_time": 7,  "geometry": [], "landmarks": []}),
+    ("College Road",  "Canada Corner",   {"road_name": "College Road",      "segment_id": 6,  "base_travel_time": 5,  "geometry": [], "landmarks": []}),
+    ("College Road",  "Gangapur Road",   {"road_name": "Gangapur Road",     "segment_id": 7,  "base_travel_time": 9,  "geometry": [], "landmarks": []}),
+    ("College Road",  "Indira Nagar",    {"road_name": "Indira Nagar Road", "segment_id": 8,  "base_travel_time": 8,  "geometry": [], "landmarks": []}),
+    ("Canada Corner", "Commissioner Office",   {"road_name": "Commissioner Office Road","segment_id": 9,  "base_travel_time": 4,  "geometry": [], "landmarks": []}),
+    ("Canada Corner", "Nashik Phata",    {"road_name": "Nashik Phata Road", "segment_id": 10, "base_travel_time": 12, "geometry": [], "landmarks": []}),
+    ("Gangapur Road", "Trimbak Road",    {"road_name": "Trimbak Road",      "segment_id": 11, "base_travel_time": 11, "geometry": [], "landmarks": []}),
+    ("Gangapur Road", "Mhasrul",         {"road_name": "Mhasrul Road",      "segment_id": 12, "base_travel_time": 13, "geometry": [], "landmarks": []}),
+    ("Gangapur Road", "Nashik Phata",    {"road_name": "Nashik Phata Road", "segment_id": 13, "base_travel_time": 10, "geometry": [], "landmarks": []}),
+    ("Dwarka Circle", "Satpur",          {"road_name": "Satpur Road",       "segment_id": 14, "base_travel_time": 9,  "geometry": [], "landmarks": []}),
+    ("Dwarka Circle", "Cidco",           {"road_name": "Cidco Road",        "segment_id": 15, "base_travel_time": 7,  "geometry": [], "landmarks": []}),
+    ("Dwarka Circle", "Pathardi Phata",  {"road_name": "Pathardi Road",     "segment_id": 16, "base_travel_time": 8,  "geometry": [], "landmarks": []}),
+    ("Dwarka Circle", "Sharanpur Road",  {"road_name": "Dwarka-CBS Road",   "segment_id": 17, "base_travel_time": 6,  "geometry": [], "landmarks": []}),
+    ("Satpur",        "Ambad",           {"road_name": "Ambad Link Road",   "segment_id": 18, "base_travel_time": 8,  "geometry": [], "landmarks": []}),
+    ("Satpur",        "Cidco",           {"road_name": "MIDC Road",         "segment_id": 19, "base_travel_time": 6,  "geometry": [], "landmarks": []}),
+    ("Ambad",         "Cidco",           {"road_name": "Industrial Road",   "segment_id": 20, "base_travel_time": 5,  "geometry": [], "landmarks": []}),
+    ("Ambad",         "Nashik Phata",    {"road_name": "Ambad-Phata Road",  "segment_id": 21, "base_travel_time": 10, "geometry": [], "landmarks": []}),
+    ("Nashik Road",   "Mumbai Naka",     {"road_name": "Nashik-Mumbai Road","segment_id": 22, "base_travel_time": 12, "geometry": [], "landmarks": []}),
+    ("Nashik Road",   "Deolali",         {"road_name": "Deolali Road",      "segment_id": 23, "base_travel_time": 14, "geometry": [], "landmarks": []}),
+    ("Nashik Road",   "Pathardi Phata",  {"road_name": "Pathardi Road",     "segment_id": 24, "base_travel_time": 8,  "geometry": [], "landmarks": []}),
+    ("Indira Nagar",  "Old Agra Road",   {"road_name": "Agra Road",         "segment_id": 25, "base_travel_time": 9,  "geometry": [], "landmarks": []}),
+    ("Indira Nagar",  "Mhasrul",         {"road_name": "Mhasrul Link",      "segment_id": 26, "base_travel_time": 11, "geometry": [], "landmarks": []}),
+    ("Panchavati",    "Sharanpur Road",  {"road_name": "Sharanpur Road",    "segment_id": 27, "base_travel_time": 5,  "geometry": [], "landmarks": []}),
+    ("Panchavati",    "Trimbak Road",    {"road_name": "Trimbak Road",      "segment_id": 28, "base_travel_time": 8,  "geometry": [], "landmarks": []}),
+    ("Mumbai Naka",   "Pathardi Phata",  {"road_name": "Pathardi Road",     "segment_id": 29, "base_travel_time": 7,  "geometry": [], "landmarks": []}),
+    ("Old Agra Road", "Mhasrul",         {"road_name": "Agra Road",         "segment_id": 30, "base_travel_time": 10, "geometry": [], "landmarks": []}),
 ]
 
 
 def build_graph():
     """
-    Build an undirected weighted graph representing the Pune road network.
+    Build an undirected weighted graph representing the Nashik road network.
     Nodes carry lat/lng; edges carry road metadata + travel times.
     """
     G = nx.Graph()
@@ -395,6 +410,40 @@ def get_nodes():
     return {"nodes": NODES}
 
 
+import math
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371000  # radius of Earth in meters
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    a = math.sin(delta_phi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+@app.get("/nearest-node")
+def get_nearest_node(lat: float, lng: float):
+    """Find the closest node to the given coordinates."""
+    nearest = None
+    min_dist = float('inf')
+    
+    for name, coords in NODES.items():
+        dist = haversine(lat, lng, coords["lat"], coords["lng"])
+        if dist < min_dist:
+            min_dist = dist
+            nearest = name
+            
+    if nearest:
+        return {
+            "nearest_node": nearest,
+            "distance_meters": int(min_dist),
+            "lat": NODES[nearest]["lat"],
+            "lng": NODES[nearest]["lng"]
+        }
+    return {"error": "No nodes available"}
+
+
 @app.get("/edges")
 def get_edges():
     """Return all road segments with metadata and endpoint coordinates."""
@@ -451,6 +500,16 @@ def serve_frontend():
     if os.path.exists(html_path):
         return FileResponse(html_path, media_type="text/html")
     return {"message": "API is running. Open frontend/map.html in a browser."}
+
+
+@app.get("/style.css")
+def serve_style():
+    """Serve the stylesheet for the dashboard."""
+    style_path = os.path.join(BASE_DIR, "frontend", "style.css")
+    style_path = os.path.abspath(style_path)
+    if os.path.exists(style_path):
+        return FileResponse(style_path, media_type="text/css")
+    raise HTTPException(status_code=404, detail="style.css not found")
 
 
 # ---------------------------------------------------------------

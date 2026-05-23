@@ -11,21 +11,14 @@ import os
 # --- Road Segment Definitions ---
 # Each segment corresponds to an edge in the Pune road network graph
 ROAD_SEGMENTS = {
-    1: "FC Road",
-    2: "Tilak Road",
-    3: "Karve Road",
-    4: "Paud Road",
-    5: "Mumbai-Bangalore Highway",
-    6: "Nagar Road",
-    7: "Solapur Road",
-    8: "Satara Road",
-    9: "Airport Road",
-    10: "University Road",
-    11: "Hinjewadi Road",
-    12: "Aundh-Ravet Road",
-    13: "Old Mumbai Highway",
-    14: "Sinhagad Road",
-    15: "NIBM Road",
+    1: 'MG Road', 2: 'Sharanpur Road', 3: 'CBS-Canada Road', 4: 'Old Pune Road',
+    5: 'Panchavati Road', 6: 'College Road', 7: 'Gangapur Road', 8: 'Indira Nagar Road',
+    9: 'Commissioner Office Road', 10: 'Nashik Phata Road', 11: 'Trimbak Road',
+    12: 'Mhasrul Road', 13: 'Nashik Phata Road', 14: 'Satpur Road', 15: 'Cidco Road',
+    16: 'Pathardi Road', 17: 'Dwarka-CBS Road', 18: 'Ambad Link Road', 19: 'MIDC Road',
+    20: 'Industrial Road', 21: 'Ambad-Phata Road', 22: 'Nashik-Mumbai Road',
+    23: 'Deolali Road', 24: 'Pathardi Road', 25: 'Agra Road', 26: 'Mhasrul Link',
+    27: 'Sharanpur Road', 28: 'Trimbak Road', 29: 'Pathardi Road', 30: 'Agra Road'
 }
 
 WEATHER_OPTIONS = ["clear", "rain", "fog"]
@@ -105,7 +98,7 @@ def generate_vehicle_density(time_of_day, day_of_week):
     return min(max(base, 0), 100)
 
 
-def generate_dataset(num_rows=5000):
+def generate_dataset(num_rows=8000):
     """
     Generate the complete simulated traffic dataset.
     Each row represents a traffic observation on a road segment
@@ -150,7 +143,7 @@ if __name__ == "__main__":
     print("  Dynamic Route Rationalization - Data Generator")
     print("=" * 60)
     
-    df = generate_dataset(5000)
+    df = generate_dataset(8000)
     
     # Save to CSV
     output_path = os.path.join(os.path.dirname(__file__), "road_data.csv")

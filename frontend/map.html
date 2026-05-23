@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RouteAI &bull; Live Traffic Dashboard</title>
+    <title>RouteAI &mdash; Dynamic Route Rationalization, Nashik</title>
+    <meta name="description" content="AI-powered dynamic route optimization and live traffic visualization for Nashik city road network.">
 
     <!-- Leaflet.js CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -12,389 +13,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <style>
-        :root {
-            --bg-page: #0f0f0f;
-            --bg-panel: #111111;
-            --text-main: #ffffff;
-            --text-muted: #888888;
-            --accent-blue: #3b82f6;
-            --accent-green: #10b981;
-            --accent-orange: #f59e0b;
-            --accent-red: #ef4444;
-            --accent-purple: #8b5cf6;
-            --radius-md: 12px;
-            --font-main: 'Inter', system-ui, sans-serif;
-            --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.5);
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: var(--font-main);
-            background: var(--bg-page);
-            color: var(--text-main);
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Top 65% Map Area */
-        .map-section {
-            height: 65vh;
-            width: 100%;
-            position: relative;
-        }
-
-        #map {
-            width: 100%;
-            height: 100%;
-            background: #000;
-        }
-
-        /* Floating Top Bar */
-        .top-bar {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(17, 17, 17, 0.85);
-            backdrop-filter: blur(8px);
-            padding: 8px 16px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-        }
-
-        .top-bar .logo {
-            font-weight: 800;
-            font-size: 14px;
-            color: white;
-            letter-spacing: -0.5px;
-        }
-
-        .live-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .pulse-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--accent-green);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        .live-text {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        /* Floating Controls */
-        .controls-overlay {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            gap: 12px;
-        }
-
-        .pill-select-wrapper {
-            position: relative;
-        }
-
-        .pill-select {
-            appearance: none;
-            background: rgba(17, 17, 17, 0.85);
-            backdrop-filter: blur(8px);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 8px 32px 8px 16px;
-            border-radius: 20px;
-            font-family: var(--font-main);
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            transition: var(--transition);
-        }
-
-        .pill-select:hover {
-            background: rgba(30, 30, 30, 0.95);
-        }
-
-        .pill-select:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-        }
-
-        .pill-select-wrapper::after {
-            content: "▾";
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            pointer-events: none;
-            font-size: 10px;
-        }
-
-        /* Floating Legend */
-        .legend-overlay {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            gap: 16px;
-            background: transparent;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(17, 17, 17, 0.6);
-            backdrop-filter: blur(4px);
-            padding: 4px 10px;
-            border-radius: 12px;
-        }
-
-        .legend-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .dot-low { background: var(--accent-green); }
-        .dot-med { background: var(--accent-orange); }
-        .dot-high { background: var(--accent-red); }
-
-        /* Bottom 35% Info Bar */
-        .bottom-bar {
-            height: 35vh;
-            background: var(--bg-panel);
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
-            z-index: 1100;
-            display: flex;
-            padding: 24px 32px;
-            gap: 32px;
-        }
-
-        /* Section Containers */
-        .section-left, .section-right { width: 28%; }
-        .section-middle { width: 44%; border-left: 1px solid rgba(255,255,255,0.05); border-right: 1px solid rgba(255,255,255,0.05); padding: 0 32px; display: flex; flex-direction: column; justify-content: center; }
-
-        /* Left Section: Route Selector */
-        .dropdown-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        
-        .select-group { flex: 1; }
-        
-        .select-group label {
-            display: block;
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        .dark-select {
-            width: 100%;
-            background: #1a1a1a;
-            color: white;
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 12px 16px;
-            border-radius: var(--radius-md);
-            font-family: var(--font-main);
-            font-size: 14px;
-            font-weight: 500;
-            outline: none;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .dark-select:focus { border-color: var(--accent-blue); }
-
-        .btn-find {
-            width: 100%;
-            background: var(--accent-blue);
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: var(--radius-md);
-            font-family: var(--font-main);
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: var(--transition);
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-find:hover {
-            background: #2563eb;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        }
-
-        .btn-find:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Middle Section: Best Route */
-        .placeholder-text {
-            color: var(--text-muted);
-            font-size: 16px;
-            font-weight: 500;
-            text-align: center;
-        }
-
-        .result-content { display: none; }
-        
-        .optimal-badge {
-            display: inline-flex;
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--accent-green);
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 12px;
-        }
-
-        .time-display {
-            font-size: 42px;
-            font-weight: 800;
-            line-height: 1;
-            margin-bottom: 16px;
-        }
-        
-        .time-display span { font-size: 20px; color: var(--text-muted); font-weight: 600; }
-
-        .breadcrumb-path {
-            font-size: 13px;
-            color: var(--text-main);
-            font-weight: 500;
-            line-height: 1.6;
-            margin-bottom: 16px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            align-items: center;
-        }
-        
-        .breadcrumb-arrow { color: var(--text-muted); font-size: 10px; }
-
-        .save-time-line {
-            font-size: 12px;
-            color: var(--accent-blue);
-            font-weight: 600;
-        }
-
-        /* Right Section: Alternatives */
-        .section-right { display: flex; flex-direction: column; justify-content: center; }
-
-        .alt-title {
-            font-size: 10px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 700;
-            margin-bottom: 16px;
-        }
-
-        .alt-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .alt-card {
-            background: #1a1a1a;
-            border: 1px solid transparent;
-            padding: 12px 16px;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .alt-card:hover {
-            background: #222;
-        }
-
-        .alt-card.active {
-            background: rgba(139, 92, 246, 0.1);
-            border-color: rgba(139, 92, 246, 0.3);
-        }
-
-        .alt-info { display: flex; flex-direction: column; gap: 4px; }
-        .alt-name { font-size: 13px; font-weight: 600; color: white; }
-        .alt-time { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-
-        .cong-badge {
-            font-size: 10px;
-            font-weight: 700;
-            padding: 4px 8px;
-            border-radius: 8px;
-        }
-        .bg-low { background: rgba(16,185,129,0.1); color: var(--accent-green); }
-        .bg-med { background: rgba(245,158,11,0.1); color: var(--accent-orange); }
-        .bg-high { background: rgba(239,68,68,0.1); color: var(--accent-red); }
-
-        /* Leaflet popups & tooltips */
-        .leaflet-tooltip-styled {
-            background: rgba(17,17,17,0.9) !important;
-            border: none !important;
-            color: white !important;
-            font-family: var(--font-main) !important;
-            font-size: 11px !important;
-            font-weight: 600 !important;
-            padding: 4px 8px !important;
-            border-radius: 6px !important;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important;
-        }
-        .leaflet-tooltip-styled::before { display: none !important; }
-        .leaflet-popup-content-wrapper {
-            background: rgba(17,17,17,0.95) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 8px !important;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
-        }
-        .leaflet-popup-tip { background: rgba(17,17,17,0.95) !important; }
-        .popup-header { color: var(--accent-blue); font-weight: 700; font-size: 13px; margin-bottom: 4px; }
-
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Permission Overlay -->
+    <div id="permissionOverlay" class="permission-overlay" style="display: none;">
+        <div class="permission-card">
+            <div class="permission-icon">📍</div>
+            <div class="permission-title">RouteAI needs your location</div>
+            <div class="permission-desc">To find the fastest route from where you are right now</div>
+            <div class="permission-buttons">
+                <button class="btn-allow" onclick="requestLocationPermission()">Allow Location</button>
+                <button class="btn-deny" onclick="denyLocationPermission()">Search Instead</button>
+            </div>
+        </div>
+    </div>
 
     <div class="map-section">
         <div id="map"></div>
@@ -403,13 +39,21 @@
         <div class="top-bar">
             <span class="logo">RouteAI</span>
             <div class="live-indicator">
-                <span class="pulse-dot"></span>
-                <span class="live-text">Live &bull; Pune</span>
+                <span class="pulse-dot" id="pulseDot"></span>
+                <span class="live-text">Live &bull; Nashik</span>
+                <span class="last-updated-text" id="lastUpdatedText"></span>
             </div>
+        </div>
+
+        <!-- Live Clock -->
+        <div class="live-clock">
+            <span class="clock-icon">🕐</span>
+            <span id="liveClock">--:-- --</span>
         </div>
 
         <!-- Controls -->
         <div class="controls-overlay">
+            <button id="heatmapBtn" class="pill-btn" onclick="toggleHeatmap()">🔥 Heatmap</button>
             <div class="pill-select-wrapper">
                 <select id="timeSelect" class="pill-select" onchange="handleControlChange()">
                     <!-- Options injected by JS -->
@@ -446,27 +90,53 @@
     <div class="bottom-bar">
         <!-- Left Section -->
         <div class="section-left">
-            <div class="dropdown-row">
-                <div class="select-group">
+            <div class="search-row">
+                <!-- Source Search -->
+                <div class="search-group" id="sourceSearchGroup">
                     <label>Source</label>
-                    <select id="sourceSelect" class="dark-select"></select>
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="sourceInput" placeholder="Search in Nashik..." autocomplete="off">
+                        <button class="search-clear" id="sourceClear" onclick="clearSearch('source')">&times;</button>
+                    </div>
+                    <div class="search-dropdown" id="sourceDropdown"></div>
+                    <div class="snapped-message" id="sourceSnapped"></div>
+                    <div id="gpsAccuracy" class="accuracy-text" style="display: none;"></div>
                 </div>
-                <div class="select-group">
+
+                <!-- Swap Button -->
+                <div class="swap-row">
+                    <button class="btn-swap" onclick="swapLocations()" title="Swap source and destination">⇅</button>
+                </div>
+
+                <!-- Destination Search -->
+                <div class="search-group" id="destSearchGroup">
                     <label>Destination</label>
-                    <select id="destSelect" class="dark-select"></select>
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="destInput" placeholder="Search in Nashik..." autocomplete="off">
+                        <button class="search-clear" id="destClear" onclick="clearSearch('dest')">&times;</button>
+                    </div>
+                    <div class="search-dropdown" id="destDropdown"></div>
+                    <div class="snapped-message" id="destSnapped"></div>
                 </div>
             </div>
-            <button id="optimizeBtn" class="btn-find" onclick="optimizeRoute()">Find Best Route</button>
+            <button id="optimizeBtn" class="btn-find" onclick="optimizeRoute()" disabled>Find Best Route</button>
         </div>
 
         <!-- Middle Section -->
         <div class="section-middle">
-            <div id="resultPlaceholder" class="placeholder-text">Select route to optimize</div>
+            <div id="resultPlaceholder" class="placeholder-text">
+                <span class="placeholder-icon">🗺️</span>
+                Search locations to find optimal route
+            </div>
             <div id="resultContent" class="result-content">
-                <span class="optimal-badge">Optimal Route</span>
+                <span class="optimal-badge">OPTIMAL ROUTE</span>
                 <div id="routeTime" class="time-display">-- <span>min</span></div>
                 <div id="routePath" class="breadcrumb-path"></div>
+                <div id="routeVia" class="via-line"></div>
                 <div id="routeSave" class="save-time-line"></div>
+                <div id="routeArrival" class="arrival-line"></div>
             </div>
         </div>
 
@@ -474,35 +144,120 @@
         <div class="section-right">
             <div class="alt-title">Alternatives</div>
             <div id="altList" class="alt-list">
-                <div style="font-size: 12px; color: var(--text-muted);">No alternatives calculated.</div>
+                <div class="alt-empty">No alternatives calculated.</div>
             </div>
         </div>
     </div>
 
     <!-- Leaflet.js script -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <script>
+        // ============================================
+        // CONFIG
+        // ============================================
         const API_BASE = "http://localhost:8000";
-        
+
+        // ============================================
+        // NASHIK ROAD NETWORK (Client-side graph)
+        // ============================================
+        const NASHIK_NODES = {
+            "CBS Chowk":       [20.0059, 73.7898],
+            "Gangapur Road":   [20.0219, 73.7677],
+            "Dwarka Circle":   [19.9975, 73.7654],
+            "College Road":    [20.0110, 73.7750],
+            "Nashik Road":     [19.9801, 73.8309],
+            "Indira Nagar":    [20.0287, 73.8012],
+            "Panchavati":      [20.0113, 73.7654],
+            "Mhasrul":         [20.0480, 73.8012],
+            "Satpur":          [19.9975, 73.7450],
+            "Ambad":           [20.0113, 73.7450],
+            "Cidco":           [20.0000, 73.7550],
+            "Nashik Phata":    [20.0400, 73.7750],
+            "Canada Corner":   [20.0168, 73.7805],
+            "Sharanpur Road":  [20.0059, 73.7700],
+            "Mumbai Naka":     [19.9900, 73.7898],
+            "Deolali":         [19.9500, 73.8309],
+            "Trimbak Road":    [20.0350, 73.7600],
+            "Pathardi Phata":  [19.9850, 73.7750],
+            "Old Agra Road":   [20.0200, 73.8100],
+            "Commissioner Office":   [20.0059, 73.7800]
+        };
+
+        const NASHIK_EDGES = [
+            { from: "CBS Chowk",     to: "College Road",    road_name: "MG Road",              segment_id: 1,  base_travel_time: 8 },
+            { from: "CBS Chowk",     to: "Sharanpur Road",  road_name: "Sharanpur Road",        segment_id: 2,  base_travel_time: 6 },
+            { from: "CBS Chowk",     to: "Canada Corner",   road_name: "CBS-Canada Road",       segment_id: 3,  base_travel_time: 5 },
+            { from: "CBS Chowk",     to: "Mumbai Naka",     road_name: "Old Pune Road",         segment_id: 4,  base_travel_time: 10 },
+            { from: "CBS Chowk",     to: "Panchavati",      road_name: "Panchavati Road",       segment_id: 5,  base_travel_time: 7 },
+            { from: "College Road",  to: "Canada Corner",   road_name: "College Road",          segment_id: 6,  base_travel_time: 5 },
+            { from: "College Road",  to: "Gangapur Road",   road_name: "Gangapur Road",         segment_id: 7,  base_travel_time: 9 },
+            { from: "College Road",  to: "Indira Nagar",    road_name: "Indira Nagar Road",     segment_id: 8,  base_travel_time: 8 },
+            { from: "Canada Corner", to: "Commissioner Office",   road_name: "Commissioner Office Road",    segment_id: 9,  base_travel_time: 4 },
+            { from: "Canada Corner", to: "Nashik Phata",    road_name: "Nashik Phata Road",     segment_id: 10, base_travel_time: 12 },
+            { from: "Gangapur Road", to: "Trimbak Road",    road_name: "Trimbak Road",          segment_id: 11, base_travel_time: 11 },
+            { from: "Gangapur Road", to: "Mhasrul",         road_name: "Mhasrul Road",          segment_id: 12, base_travel_time: 13 },
+            { from: "Gangapur Road", to: "Nashik Phata",    road_name: "Nashik Phata Road",     segment_id: 13, base_travel_time: 10 },
+            { from: "Dwarka Circle", to: "Satpur",          road_name: "Satpur Road",           segment_id: 14, base_travel_time: 9 },
+            { from: "Dwarka Circle", to: "Cidco",           road_name: "Cidco Road",            segment_id: 15, base_travel_time: 7 },
+            { from: "Dwarka Circle", to: "Pathardi Phata",  road_name: "Pathardi Road",         segment_id: 16, base_travel_time: 8 },
+            { from: "Dwarka Circle", to: "Sharanpur Road",  road_name: "Dwarka-CBS Road",       segment_id: 17, base_travel_time: 6 },
+            { from: "Satpur",        to: "Ambad",           road_name: "Ambad Link Road",       segment_id: 18, base_travel_time: 8 },
+            { from: "Satpur",        to: "Cidco",           road_name: "MIDC Road",             segment_id: 19, base_travel_time: 6 },
+            { from: "Ambad",         to: "Cidco",           road_name: "Industrial Road",       segment_id: 20, base_travel_time: 5 },
+            { from: "Ambad",         to: "Nashik Phata",    road_name: "Ambad-Phata Road",      segment_id: 21, base_travel_time: 10 },
+            { from: "Nashik Road",   to: "Mumbai Naka",     road_name: "Nashik-Mumbai Road",    segment_id: 22, base_travel_time: 12 },
+            { from: "Nashik Road",   to: "Deolali",         road_name: "Deolali Road",          segment_id: 23, base_travel_time: 14 },
+            { from: "Nashik Road",   to: "Pathardi Phata",  road_name: "Pathardi Road",         segment_id: 24, base_travel_time: 8 },
+            { from: "Indira Nagar",  to: "Old Agra Road",   road_name: "Agra Road",             segment_id: 25, base_travel_time: 9 },
+            { from: "Indira Nagar",  to: "Mhasrul",         road_name: "Mhasrul Link",          segment_id: 26, base_travel_time: 11 },
+            { from: "Panchavati",    to: "Sharanpur Road",  road_name: "Sharanpur Road",        segment_id: 27, base_travel_time: 5 },
+            { from: "Panchavati",    to: "Trimbak Road",    road_name: "Trimbak Road",          segment_id: 28, base_travel_time: 8 },
+            { from: "Mumbai Naka",   to: "Pathardi Phata",  road_name: "Pathardi Road",         segment_id: 29, base_travel_time: 7 },
+            { from: "Old Agra Road", to: "Mhasrul",         road_name: "Agra Road",             segment_id: 30, base_travel_time: 10 }
+        ];
+
+        // ============================================
+        // STATE
+        // ============================================
         let map = null;
-        let graphData = null;
         let allTraffic = [];
-        
+
         let nodeLayers = [];
         let edgeLayers = [];
         let optimizedRouteLayers = [];
-        
+
         let currentOptimizedData = null;
         let currentAllRoutesData = null;
         let selectedAltRouteIdx = 0;
 
-        // Auto-refresh timer
-        setInterval(silentRefreshTraffic, 30000);
+        let heatmapLayer = null;
+        let heatmapActive = false;
+        let sourceMarker = null;
+        let destMarker = null;
 
+        // Selected search locations
+        let selectedSource = null;  // { name, lat, lng, snappedNode }
+        let selectedDest = null;    // { name, lat, lng, snappedNode }
+
+        // Nominatim debounce timers
+        let sourceSearchTimer = null;
+        let destSearchTimer = null;
+
+        // Last-updated tracking
+        let lastUpdateTimestamp = null;
+        let lastUpdateIntervalId = null;
+
+        // Traffic data indexed by segment_id
+        let trafficMap = {};
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
         function initMap() {
             map = L.map("map", {
-                center: [18.538, 73.845],
-                zoom: 12.5,
+                center: [20.0059, 73.7898],
+                zoom: 13,
                 zoomControl: false,
                 attributionControl: false
             });
@@ -513,11 +268,219 @@
 
             L.control.zoom({ position: 'bottomleft' }).addTo(map);
             populateTimeSelect();
+
+            // Right click / Long press to set destination
+            map.on('contextmenu', async (e) => {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                await setDestinationFromClick(lat, lng);
+            });
+
+            // Start location tracking flow
+            document.getElementById('permissionOverlay').style.display = 'flex';
+        }
+
+        // ============================================
+        // TOASTS
+        // ============================================
+        function showToast(msg, isPulse = false, duration = 3000, keepAlive = false) {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+            toast.className = "toast";
+            
+            let html = "";
+            if (isPulse) html += `<div class="toast-pulse"></div>`;
+            html += `<span>${msg}</span>`;
+            toast.innerHTML = html;
+            
+            container.appendChild(toast);
+            
+            if (!keepAlive) {
+                setTimeout(() => {
+                    toast.classList.add("fade-out");
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
+            return toast;
+        }
+
+        // ============================================
+        // USER LOCATION TRACKING
+        // ============================================
+        let watchId = null;
+        let userLocationToast = null;
+        let isLocationAutoDetected = false;
+
+        function requestLocationPermission() {
+            document.getElementById('permissionOverlay').style.display = 'none';
+            userLocationToast = showToast("📍 Detecting your location...", true, 0, true);
+            
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    onLocationSuccess,
+                    onLocationError,
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            } else {
+                onLocationError({ message: "Geolocation not supported" });
+            }
+        }
+
+        function denyLocationPermission() {
+            document.getElementById('permissionOverlay').style.display = 'none';
+            document.getElementById('sourceInput').focus();
+        }
+
+        async function onLocationSuccess(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            
+            if (userLocationToast) {
+                userLocationToast.classList.add("fade-out");
+                setTimeout(() => userLocationToast.remove(), 300);
+            }
+            
+            // Show accuracy
+            const accEl = document.getElementById("gpsAccuracy");
+            accEl.style.display = "block";
+            accEl.textContent = `📡 GPS accuracy: ~${Math.round(accuracy)} meters`;
+            if (accuracy > 100) {
+                accEl.textContent = `⚠️ Low GPS accuracy — location may be approximate`;
+                accEl.className = "accuracy-text accuracy-low";
+            } else {
+                accEl.className = "accuracy-text";
+            }
+
+            try {
+                // Reverse Geocode
+                const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
+                const data = await res.json();
+                const placeName = data.display_name ? data.display_name.split(",")[0] : "Current Location";
+                
+                showToast(`📍 Location detected: ${placeName}`, false, 3000);
+                
+                // Snap to nearest via backend
+                const snapRes = await fetch(`${API_BASE}/nearest-node?lat=${lat}&lng=${lng}`);
+                const snapData = await snapRes.json();
+                const snappedNode = snapData.nearest_node || findNearestNode(lat, lng);
+                
+                selectedSource = { name: placeName, lat, lng, snappedNode };
+                document.getElementById("sourceInput").value = placeName;
+                toggleClearBtn("source", true);
+                
+                const snappedEl = document.getElementById("sourceSnapped");
+                snappedEl.textContent = `Snapped to nearest point: ${snappedNode}`;
+                snappedEl.classList.add("visible");
+                
+                isLocationAutoDetected = true;
+                placeSearchMarker("source", lat, lng);
+                map.flyTo([lat, lng], 14, { animate: true, duration: 1.5 });
+                
+                updateOptimizeButton();
+                
+                // Start watching
+                watchId = navigator.geolocation.watchPosition(onLocationMove, null, {
+                    enableHighAccuracy: true, timeout: 10000, maximumAge: 0
+                });
+
+                if (selectedDest) {
+                    optimizeRoute();
+                }
+            } catch (err) {
+                console.error("Location success error:", err);
+            }
+        }
+
+        function onLocationError(error) {
+            if (userLocationToast) {
+                userLocationToast.classList.add("fade-out");
+                setTimeout(() => userLocationToast.remove(), 300);
+            }
+            showToast("📍 Location access denied — please search your location manually", false, 0, true);
+        }
+
+        async function onLocationMove(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            
+            if (!selectedSource) return;
+            
+            // Check if moved > 50 meters
+            const dist = haversine(selectedSource.lat, selectedSource.lng, lat, lng) * 1000;
+            if (dist > 50) {
+                const accEl = document.getElementById("gpsAccuracy");
+                accEl.textContent = `📡 GPS accuracy: ~${Math.round(accuracy)} meters`;
+                if (accuracy > 100) {
+                    accEl.textContent = `⚠️ Low GPS accuracy — location may be approximate`;
+                    accEl.className = "accuracy-text accuracy-low";
+                } else {
+                    accEl.className = "accuracy-text";
+                }
+
+                // Reverse geocode silently
+                try {
+                    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
+                    const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
+                    const data = await res.json();
+                    const placeName = data.display_name ? data.display_name.split(",")[0] : "Current Location";
+                    
+                    const snapRes = await fetch(`${API_BASE}/nearest-node?lat=${lat}&lng=${lng}`);
+                    const snapData = await snapRes.json();
+                    const snappedNode = snapData.nearest_node || findNearestNode(lat, lng);
+                    
+                    selectedSource = { name: placeName, lat, lng, snappedNode };
+                    document.getElementById("sourceInput").value = placeName;
+                    
+                    const snappedEl = document.getElementById("sourceSnapped");
+                    snappedEl.textContent = `Snapped to nearest point: ${snappedNode}`;
+                    
+                    placeSearchMarker("source", lat, lng);
+                    
+                    if (currentOptimizedData && selectedDest) {
+                        optimizeRoute();
+                    }
+                } catch (err) {
+                    console.error("Watch position error:", err);
+                }
+            }
+        }
+
+        async function setDestinationFromClick(lat, lng) {
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
+                const data = await res.json();
+                const placeName = data.display_name ? data.display_name.split(",")[0] : "Selected Location";
+                
+                const snapRes = await fetch(`${API_BASE}/nearest-node?lat=${lat}&lng=${lng}`);
+                const snapData = await snapRes.json();
+                const snappedNode = snapData.nearest_node || findNearestNode(lat, lng);
+                
+                selectedDest = { name: placeName, lat, lng, snappedNode };
+                document.getElementById("destInput").value = placeName;
+                toggleClearBtn("dest", true);
+                
+                const snappedEl = document.getElementById("destSnapped");
+                snappedEl.textContent = `Snapped to nearest point: ${snappedNode}`;
+                snappedEl.classList.add("visible");
+                
+                placeSearchMarker("dest", lat, lng);
+                updateOptimizeButton();
+                
+                if (selectedSource) {
+                    optimizeRoute();
+                }
+            } catch (err) {
+                console.error("Map click reverse geocode error:", err);
+            }
         }
 
         function populateTimeSelect() {
             const select = document.getElementById("timeSelect");
-            for(let i=0; i<24; i++) {
+            for (let i = 0; i < 24; i++) {
                 const ampm = i >= 12 ? 'PM' : 'AM';
                 const hr = i % 12 === 0 ? 12 : i % 12;
                 select.add(new Option(`🕐 Time: ${hr} ${ampm}`, i));
@@ -525,33 +488,320 @@
             select.value = "8";
         }
 
-        async function loadInitialData() {
+        // ============================================
+        // LIVE CLOCK
+        // ============================================
+        function updateLiveClock() {
+            const now = new Date();
+            let h = now.getHours();
+            const m = now.getMinutes().toString().padStart(2, '0');
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            document.getElementById("liveClock").textContent = `${h}:${m} ${ampm}`;
+        }
+
+        // ============================================
+        // LAST UPDATED COUNTER
+        // ============================================
+        function startLastUpdatedCounter() {
+            lastUpdateTimestamp = Date.now();
+            if (lastUpdateIntervalId) clearInterval(lastUpdateIntervalId);
+            lastUpdateIntervalId = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - lastUpdateTimestamp) / 1000);
+                const el = document.getElementById("lastUpdatedText");
+                if (el) el.textContent = `• ${elapsed}s ago`;
+            }, 1000);
+        }
+
+        // ============================================
+        // HAVERSINE DISTANCE (for snap-to-nearest-node)
+        // ============================================
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function findNearestNode(lat, lng) {
+            let minDist = Infinity;
+            let nearest = null;
+            for (const [name, coords] of Object.entries(NASHIK_NODES)) {
+                const d = haversine(lat, lng, coords[0], coords[1]);
+                if (d < minDist) {
+                    minDist = d;
+                    nearest = name;
+                }
+            }
+            return nearest;
+        }
+
+        // ============================================
+        // NOMINATIM SEARCH
+        // ============================================
+        function setupSearchListeners() {
+            const srcInput = document.getElementById("sourceInput");
+            const dstInput = document.getElementById("destInput");
+
+            const handleInput = (e, type) => {
+                clearTimeout(type === "source" ? sourceSearchTimer : destSearchTimer);
+                const val = e.target.value.trim();
+                toggleClearBtn(type, val.length > 0);
+                
+                if (val.length === 0) {
+                    showDefaultNodes(type, "");
+                } else if (val.length < 3) {
+                    showDefaultNodes(type, val);
+                } else {
+                    const timer = setTimeout(() => searchNominatim(val, type), 400);
+                    if (type === "source") sourceSearchTimer = timer;
+                    else destSearchTimer = timer;
+                }
+            };
+
+            const handleFocus = (e, type) => {
+                const val = e.target.value.trim();
+                if (val.length < 3) {
+                    showDefaultNodes(type, val);
+                }
+            };
+
+            srcInput.addEventListener("input", (e) => handleInput(e, "source"));
+            srcInput.addEventListener("focus", (e) => handleFocus(e, "source"));
+
+            dstInput.addEventListener("input", (e) => handleInput(e, "dest"));
+            dstInput.addEventListener("focus", (e) => handleFocus(e, "dest"));
+
+            // Close dropdowns on outside click
+            document.addEventListener("click", (e) => {
+                if (!e.target.closest("#sourceSearchGroup")) closeDropdown("source");
+                if (!e.target.closest("#destSearchGroup")) closeDropdown("dest");
+            });
+        }
+
+        function showDefaultNodes(type, filterQuery) {
+            const query = filterQuery.toLowerCase();
+            const results = [];
+            
+            for (const [name, coords] of Object.entries(NASHIK_NODES)) {
+                if (name.toLowerCase().includes(query)) {
+                    results.push({
+                        display_name: `${name}, Nashik, Maharashtra`,
+                        lat: coords[0].toString(),
+                        lon: coords[1].toString()
+                    });
+                }
+            }
+            showDropdown(results, type);
+        }
+
+        async function searchNominatim(query, type) {
             try {
-                const res = await fetch(`${API_BASE}/graph-data`);
-                graphData = await res.json();
-                
-                populateDropdowns(graphData.nodes);
-                drawNodes(graphData.nodes);
-                
-                await silentRefreshTraffic();
+                const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + " Nashik Maharashtra India")}&format=json&limit=5&countrycodes=in`;
+                const res = await fetch(url, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const results = await res.json();
+                showDropdown(results, type);
             } catch (err) {
-                console.error("Failed to load initial data:", err);
+                console.error("Nominatim search error:", err);
             }
         }
 
-        function populateDropdowns(nodes) {
-            const src = document.getElementById("sourceSelect");
-            const dst = document.getElementById("destSelect");
-            
-            const sorted = [...nodes].sort((a,b) => a.name.localeCompare(b.name));
-            
-            sorted.forEach(n => {
-                src.add(new Option(n.name, n.name));
-                dst.add(new Option(n.name, n.name));
+        function showDropdown(results, type) {
+            const dropdown = document.getElementById(type === "source" ? "sourceDropdown" : "destDropdown");
+            dropdown.innerHTML = "";
+
+            if (results.length === 0) {
+                dropdown.innerHTML = '<div class="search-dropdown-item"><div class="item-name">No results found</div></div>';
+                dropdown.classList.add("open");
+                return;
+            }
+
+            results.forEach(r => {
+                const item = document.createElement("div");
+                item.className = "search-dropdown-item";
+
+                const parts = r.display_name.split(",");
+                const name = parts[0].trim();
+                const area = parts.slice(1, 3).join(",").trim();
+
+                item.innerHTML = `<div class="item-name">${name}</div><div class="item-area">${area}</div>`;
+                item.addEventListener("click", () => selectSearchResult(r, type, name));
+                dropdown.appendChild(item);
             });
-            
-            src.value = "Hinjewadi";
-            dst.value = "Hadapsar";
+
+            dropdown.classList.add("open");
+        }
+
+        function selectSearchResult(result, type, displayName) {
+            const lat = parseFloat(result.lat);
+            const lng = parseFloat(result.lon);
+            const snappedNode = findNearestNode(lat, lng);
+
+            const selection = { name: displayName, lat, lng, snappedNode };
+
+            if (type === "source") {
+                selectedSource = selection;
+                document.getElementById("sourceInput").value = displayName;
+                closeDropdown("source");
+                toggleClearBtn("source", true);
+
+                // Show snapped message if different from exact search
+                const snappedEl = document.getElementById("sourceSnapped");
+                snappedEl.textContent = `Snapped to nearest point: ${snappedNode}`;
+                snappedEl.classList.add("visible");
+
+                // Place marker
+                placeSearchMarker("source", lat, lng);
+            } else {
+                selectedDest = selection;
+                document.getElementById("destInput").value = displayName;
+                closeDropdown("dest");
+                toggleClearBtn("dest", true);
+
+                const snappedEl = document.getElementById("destSnapped");
+                snappedEl.textContent = `Snapped to nearest point: ${snappedNode}`;
+                snappedEl.classList.add("visible");
+
+                placeSearchMarker("dest", lat, lng);
+            }
+
+            updateOptimizeButton();
+            if (selectedSource && selectedDest) {
+                optimizeRoute();
+            }
+        }
+
+        function placeSearchMarker(type, lat, lng) {
+            if (type === "source") {
+                if (sourceMarker) map.removeLayer(sourceMarker);
+                
+                const userPinHtml = `
+                    <div class="user-location-wrapper">
+                        <div class="user-location-pulse"></div>
+                        <div class="user-location-dot"></div>
+                    </div>
+                `;
+                const userIcon = L.divIcon({
+                    html: userPinHtml,
+                    className: '',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+                
+                sourceMarker = L.marker([lat, lng], {
+                    icon: userIcon,
+                    zIndexOffset: 1000
+                }).addTo(map);
+                
+                sourceMarker.bindTooltip("You are here", {
+                    permanent: true,
+                    direction: "top",
+                    className: "user-location-label",
+                    offset: [0, -12]
+                }).openTooltip();
+            } else {
+                if (destMarker) map.removeLayer(destMarker);
+                destMarker = L.circleMarker([lat, lng], {
+                    radius: 9,
+                    fillColor: "#10b981",
+                    fillOpacity: 1,
+                    color: "#ffffff",
+                    weight: 3
+                }).addTo(map);
+                destMarker.bindTooltip("Destination", {
+                    permanent: true,
+                    direction: "bottom",
+                    className: "route-end-badge",
+                    offset: [0, 8]
+                }).openTooltip();
+            }
+        }
+
+        function closeDropdown(type) {
+            const dropdown = document.getElementById(type === "source" ? "sourceDropdown" : "destDropdown");
+            dropdown.classList.remove("open");
+        }
+
+        function toggleClearBtn(type, show) {
+            const btn = document.getElementById(type === "source" ? "sourceClear" : "destClear");
+            if (show) btn.classList.add("visible");
+            else btn.classList.remove("visible");
+        }
+
+        function clearSearch(type) {
+            if (type === "source") {
+                document.getElementById("sourceInput").value = "";
+                selectedSource = null;
+                if (sourceMarker) { map.removeLayer(sourceMarker); sourceMarker = null; }
+                document.getElementById("sourceSnapped").classList.remove("visible");
+                toggleClearBtn("source", false);
+            } else {
+                document.getElementById("destInput").value = "";
+                selectedDest = null;
+                if (destMarker) { map.removeLayer(destMarker); destMarker = null; }
+                document.getElementById("destSnapped").classList.remove("visible");
+                toggleClearBtn("dest", false);
+            }
+            updateOptimizeButton();
+            // Clear route
+            currentOptimizedData = null;
+            currentAllRoutesData = null;
+            clearRouteFromMap();
+            resetResultUI();
+        }
+
+        function swapLocations() {
+            const tmpSrc = selectedSource;
+            const tmpDst = selectedDest;
+            const tmpSrcVal = document.getElementById("sourceInput").value;
+            const tmpDstVal = document.getElementById("destInput").value;
+
+            selectedSource = tmpDst;
+            selectedDest = tmpSrc;
+            document.getElementById("sourceInput").value = tmpDstVal;
+            document.getElementById("destInput").value = tmpSrcVal;
+
+            // Swap snapped messages
+            const srcSnap = document.getElementById("sourceSnapped");
+            const dstSnap = document.getElementById("destSnapped");
+            const tmpSnapText = srcSnap.textContent;
+            const tmpSnapVisible = srcSnap.classList.contains("visible");
+            srcSnap.textContent = dstSnap.textContent;
+            srcSnap.classList.toggle("visible", dstSnap.classList.contains("visible"));
+            dstSnap.textContent = tmpSnapText;
+            dstSnap.classList.toggle("visible", tmpSnapVisible);
+
+            // Swap markers
+            if (sourceMarker) map.removeLayer(sourceMarker);
+            if (destMarker) map.removeLayer(destMarker);
+            sourceMarker = null;
+            destMarker = null;
+
+            if (selectedSource) placeSearchMarker("source", selectedSource.lat, selectedSource.lng);
+            if (selectedDest) placeSearchMarker("dest", selectedDest.lat, selectedDest.lng);
+
+            toggleClearBtn("source", !!selectedSource);
+            toggleClearBtn("dest", !!selectedDest);
+
+            updateOptimizeButton();
+        }
+
+        function updateOptimizeButton() {
+            const btn = document.getElementById("optimizeBtn");
+            btn.disabled = !(selectedSource && selectedDest);
+        }
+
+        // ============================================
+        // TRAFFIC DATA LOADING
+        // ============================================
+        async function loadInitialData() {
+            drawAllNodes();
+            await silentRefreshTraffic();
         }
 
         async function silentRefreshTraffic() {
@@ -563,29 +813,118 @@
                 const res = await fetch(`${API_BASE}/traffic-status?time_of_day=${time}&day_of_week=${day}&weather=${weather}`);
                 const data = await res.json();
 
-                allTraffic = data.traffic.map(t => {
-                    const noise = (Math.random() - 0.5) * 0.1;
-                    return { ...t, congestion_score: Math.max(0, Math.min(1, t.congestion_score + noise)) };
+                // Build traffic map indexed by segment_id
+                trafficMap = {};
+                if (data.traffic) {
+                    data.traffic.forEach(t => {
+                        const noise = (Math.random() - 0.5) * 0.1;
+                        t.congestion_score = Math.max(0, Math.min(1, t.congestion_score + noise));
+                        trafficMap[t.segment_id] = t;
+                    });
+                }
+
+                // Also generate synthetic traffic for any Nashik edge not covered by API
+                NASHIK_EDGES.forEach(edge => {
+                    if (!trafficMap[edge.segment_id]) {
+                        // Generate a plausible congestion from time-based heuristic
+                        const h = parseInt(time);
+                        let base = 0.3;
+                        if (h >= 8 && h <= 10) base = 0.65;
+                        else if (h >= 17 && h <= 20) base = 0.7;
+                        else if (h >= 12 && h <= 14) base = 0.45;
+                        else if (h >= 0 && h <= 5) base = 0.1;
+
+                        if (parseInt(day) >= 5) base *= 0.65;
+                        if (weather === "rain") base = Math.min(1, base + 0.15);
+                        else if (weather === "fog") base = Math.min(1, base + 0.1);
+
+                        const noise = (Math.random() - 0.5) * 0.2;
+                        const score = Math.max(0, Math.min(1, base + noise));
+
+                        trafficMap[edge.segment_id] = {
+                            segment_id: edge.segment_id,
+                            road_name: edge.road_name,
+                            congestion_score: score,
+                            base_travel_time: edge.base_travel_time,
+                            effective_travel_time: edge.base_travel_time * (1 + score),
+                            from: edge.from,
+                            to: edge.to,
+                            from_coords: NASHIK_NODES[edge.from],
+                            to_coords: NASHIK_NODES[edge.to]
+                        };
+                    }
                 });
 
-                drawRoadSegments(allTraffic);
-                
+                drawRoadSegments();
+                drawAllNodes();
+
+                if (heatmapActive) drawHeatmap();
+
+                // Pulse the dot
+                const dot = document.getElementById("pulseDot");
+                dot.classList.add("refreshing");
+                setTimeout(() => dot.classList.remove("refreshing"), 2000);
+
+                startLastUpdatedCounter();
+
+                // Re-optimize if route exists
                 if (currentOptimizedData) {
                     optimizeRoute(true);
                 }
             } catch (err) {
                 console.error("Traffic fetch error", err);
+                // Fallback: generate all synthetic traffic
+                generateSyntheticTraffic();
+                drawRoadSegments();
+                drawAllNodes();
             }
+        }
+
+        function generateSyntheticTraffic() {
+            const time = parseInt(document.getElementById("timeSelect").value);
+            const day = parseInt(document.getElementById("daySelect").value);
+            const weather = document.getElementById("weatherSelect").value;
+
+            trafficMap = {};
+            NASHIK_EDGES.forEach(edge => {
+                let base = 0.3;
+                if (time >= 8 && time <= 10) base = 0.65;
+                else if (time >= 17 && time <= 20) base = 0.7;
+                else if (time >= 12 && time <= 14) base = 0.45;
+                else if (time >= 0 && time <= 5) base = 0.1;
+
+                if (day >= 5) base *= 0.65;
+                if (weather === "rain") base = Math.min(1, base + 0.15);
+                else if (weather === "fog") base = Math.min(1, base + 0.1);
+
+                const noise = (Math.random() - 0.5) * 0.2;
+                const score = Math.max(0, Math.min(1, base + noise));
+
+                trafficMap[edge.segment_id] = {
+                    segment_id: edge.segment_id,
+                    road_name: edge.road_name,
+                    congestion_score: score,
+                    base_travel_time: edge.base_travel_time,
+                    effective_travel_time: edge.base_travel_time * (1 + score),
+                    from: edge.from,
+                    to: edge.to,
+                    from_coords: NASHIK_NODES[edge.from],
+                    to_coords: NASHIK_NODES[edge.to]
+                };
+            });
         }
 
         function handleControlChange() {
             silentRefreshTraffic();
         }
 
+        // ============================================
+        // COLOR / BADGE HELPERS
+        // ============================================
         function getCongestionColor(score) {
-            if (score <= 0.3) return "var(--accent-green)";
-            if (score <= 0.6) return "var(--accent-orange)";
-            return "var(--accent-red)";
+            if (score <= 0.3) return "#10b981";
+            if (score <= 0.6) return "#f59e0b";
+            return "#ef4444";
         }
 
         function getCongestionBadgeClass(score) {
@@ -600,78 +939,374 @@
             return "High";
         }
 
-        function drawNodes(nodes) {
+        function getCongestionTextClass(score) {
+            if (score <= 0.3) return "text-low";
+            if (score <= 0.6) return "text-med";
+            return "text-high";
+        }
+
+        // ============================================
+        // HEATMAP
+        // ============================================
+        function toggleHeatmap() {
+            heatmapActive = !heatmapActive;
+            const btn = document.getElementById("heatmapBtn");
+            if (heatmapActive) {
+                btn.classList.add("active");
+                drawHeatmap();
+            } else {
+                btn.classList.remove("active");
+                if (heatmapLayer) {
+                    map.removeLayer(heatmapLayer);
+                    heatmapLayer = null;
+                }
+            }
+        }
+
+        function drawHeatmap() {
+            if (heatmapLayer) map.removeLayer(heatmapLayer);
+            if (!heatmapActive) return;
+
+            const points = [];
+            for (const [sid, t] of Object.entries(trafficMap)) {
+                const fromCoords = NASHIK_NODES[t.from];
+                const toCoords = NASHIK_NODES[t.to];
+                if (fromCoords) points.push([fromCoords[0], fromCoords[1], t.congestion_score * 0.8]);
+                if (toCoords) points.push([toCoords[0], toCoords[1], t.congestion_score * 0.8]);
+                // Midpoint
+                if (fromCoords && toCoords) {
+                    const midLat = (fromCoords[0] + toCoords[0]) / 2;
+                    const midLng = (fromCoords[1] + toCoords[1]) / 2;
+                    points.push([midLat, midLng, t.congestion_score]);
+                }
+            }
+
+            heatmapLayer = L.heatLayer(points, {
+                radius: 25,
+                blur: 18,
+                maxZoom: 15,
+                max: 1.0,
+                gradient: {
+                    0.2: 'rgba(16, 185, 129, 0.5)',
+                    0.5: 'rgba(245, 158, 11, 0.7)',
+                    0.8: 'rgba(239, 68, 68, 0.9)'
+                }
+            }).addTo(map);
+        }
+
+        // ============================================
+        // DRAW NODES
+        // ============================================
+        function drawAllNodes() {
             nodeLayers.forEach(l => map.removeLayer(l));
             nodeLayers = [];
 
-            nodes.forEach(node => {
-                const marker = L.circleMarker([node.lat, node.lon], {
-                    radius: 4,
-                    fillColor: "#0f0f0f",
-                    fillOpacity: 1,
-                    color: "rgba(255,255,255,0.8)",
+            for (const [name, coords] of Object.entries(NASHIK_NODES)) {
+                // Find busiest connected road for fill color
+                let maxCong = 0;
+                let connectedRoads = [];
+                NASHIK_EDGES.forEach(e => {
+                    if (e.from === name || e.to === name) {
+                        const t = trafficMap[e.segment_id];
+                        const cong = t ? t.congestion_score : 0.2;
+                        if (cong > maxCong) maxCong = cong;
+                        connectedRoads.push({
+                            road: e.road_name,
+                            to: e.from === name ? e.to : e.from,
+                            congestion: cong
+                        });
+                    }
+                });
+
+                const fillColor = getCongestionColor(maxCong);
+
+                const marker = L.circleMarker([coords[0], coords[1]], {
+                    radius: 7,
+                    fillColor: fillColor,
+                    fillOpacity: 0.9,
+                    color: "#ffffff",
                     weight: 2
                 }).addTo(map);
 
-                marker.bindTooltip(node.name, {
-                    permanent: false,
+                // White pill label
+                marker.bindTooltip(name, {
+                    permanent: true,
                     direction: "top",
-                    className: "leaflet-tooltip-styled"
+                    className: "node-pill-label",
+                    offset: [0, -10]
                 });
 
+                // Click popup
+                let popupHtml = `<div class="road-popup"><div class="popup-header">${name}</div>`;
+                connectedRoads.forEach(r => {
+                    popupHtml += `<div class="popup-body" style="margin-top:4px;">
+                        → ${r.to} via ${r.road}
+                        <span class="popup-score ${getCongestionTextClass(r.congestion)}">${(r.congestion * 100).toFixed(0)}%</span>
+                    </div>`;
+                });
+                popupHtml += `</div>`;
+                marker.bindPopup(popupHtml);
+
                 nodeLayers.push(marker);
-            });
+            }
         }
 
-        function drawRoadSegments(traffic) {
+        // ============================================
+        // DRAW ROAD SEGMENTS
+        // ============================================
+        function drawRoadSegments() {
             edgeLayers.forEach(l => map.removeLayer(l));
             edgeLayers = [];
 
-            if (!graphData) return;
+            NASHIK_EDGES.forEach(edge => {
+                const fromCoords = NASHIK_NODES[edge.from];
+                const toCoords = NASHIK_NODES[edge.to];
+                if (!fromCoords || !toCoords) return;
 
-            const nodeMap = {};
-            graphData.nodes.forEach(n => nodeMap[n.name] = n);
-
-            const trafficMap = {};
-            traffic.forEach(t => trafficMap[t.segment_id] = t);
-
-            graphData.edges.forEach(edge => {
-                const from = nodeMap[edge.from];
-                const to = nodeMap[edge.to];
-                if (!from || !to) return;
-
-                const score = trafficMap[edge.segment_id] ? trafficMap[edge.segment_id].congestion_score : 0.2;
+                const t = trafficMap[edge.segment_id];
+                const score = t ? t.congestion_score : 0.2;
                 const color = getCongestionColor(score);
+                const travelTime = t ? t.effective_travel_time : edge.base_travel_time;
 
-                const coords = edge.geometry && edge.geometry.length > 0
-                    ? edge.geometry.map(c => [c[0], c[1]])
-                    : [[from.lat, from.lon], [to.lat, to.lon]];
+                const coords = [
+                    [fromCoords[0], fromCoords[1]],
+                    [toCoords[0], toCoords[1]]
+                ];
 
                 const polyline = L.polyline(coords, {
                     color: color,
-                    weight: 3,
-                    opacity: 0.6,
+                    weight: 4,
+                    opacity: 0.7,
                     lineJoin: "round",
                     lineCap: "round"
                 }).addTo(map);
 
-                polyline.bindPopup(`
-                    <div style="font-family: var(--font-main); font-size: 11px;">
+                // Hover: increase weight
+                polyline.on("mouseover", function() {
+                    this.setStyle({ weight: 6, opacity: 1 });
+                });
+                polyline.on("mouseout", function() {
+                    this.setStyle({ weight: 4, opacity: 0.7 });
+                });
+
+                // Tooltip on hover
+                polyline.bindTooltip(`
+                    <div class="road-popup">
                         <div class="popup-header">${edge.road_name}</div>
-                        <div>Congestion: <span style="color: ${color}; font-weight:700;">${(score*100).toFixed(0)}%</span></div>
+                        <div class="popup-body">Congestion: <span class="popup-score ${getCongestionTextClass(score)}">${(score * 100).toFixed(0)}%</span></div>
+                        <div class="popup-detail">Travel time: ${travelTime.toFixed(1)} min</div>
                     </div>
-                `);
+                `, { sticky: true });
 
                 edgeLayers.push(polyline);
             });
         }
 
+        // ============================================
+        // DIJKSTRA ON CLIENT-SIDE GRAPH
+        // ============================================
+        function dijkstraClientSide(sourceNode, destNode) {
+            // Build adjacency list with effective travel times
+            const adj = {};
+            for (const name of Object.keys(NASHIK_NODES)) {
+                adj[name] = [];
+            }
+
+            NASHIK_EDGES.forEach(edge => {
+                const t = trafficMap[edge.segment_id];
+                const time = t ? t.effective_travel_time : edge.base_travel_time * 1.3;
+                adj[edge.from].push({ to: edge.to, time, edge });
+                adj[edge.to].push({ to: edge.from, time, edge });
+            });
+
+            // Dijkstra
+            const dist = {};
+            const prev = {};
+            const prevEdge = {};
+            const visited = new Set();
+
+            for (const n of Object.keys(NASHIK_NODES)) {
+                dist[n] = Infinity;
+            }
+            dist[sourceNode] = 0;
+
+            while (true) {
+                let u = null;
+                let minDist = Infinity;
+                for (const n of Object.keys(NASHIK_NODES)) {
+                    if (!visited.has(n) && dist[n] < minDist) {
+                        minDist = dist[n];
+                        u = n;
+                    }
+                }
+                if (u === null || u === destNode) break;
+                visited.add(u);
+
+                for (const neighbor of adj[u]) {
+                    const alt = dist[u] + neighbor.time;
+                    if (alt < dist[neighbor.to]) {
+                        dist[neighbor.to] = alt;
+                        prev[neighbor.to] = u;
+                        prevEdge[neighbor.to] = neighbor.edge;
+                    }
+                }
+            }
+
+            if (dist[destNode] === Infinity) return null;
+
+            // Reconstruct path
+            const path = [];
+            let curr = destNode;
+            while (curr) {
+                path.unshift(curr);
+                curr = prev[curr];
+            }
+
+            // Build segments
+            const segments = [];
+            for (let i = 0; i < path.length - 1; i++) {
+                const edge = prevEdge[path[i + 1]];
+                const t = trafficMap[edge.segment_id];
+                const congestion = t ? t.congestion_score : 0.3;
+                const effTime = t ? t.effective_travel_time : edge.base_travel_time * 1.3;
+
+                segments.push({
+                    from: path[i],
+                    to: path[i + 1],
+                    road_name: edge.road_name,
+                    segment_id: edge.segment_id,
+                    base_travel_time: edge.base_travel_time,
+                    congestion_score: congestion,
+                    effective_travel_time: effTime,
+                    geometry: []
+                });
+            }
+
+            return {
+                path,
+                total_time: dist[destNode],
+                segments,
+                road_names: segments.map(s => s.road_name)
+            };
+        }
+
+        function findKShortestClientSide(sourceNode, destNode, k = 3) {
+            // Yen's K-shortest paths (simplified)
+            const routes = [];
+            const bestRoute = dijkstraClientSide(sourceNode, destNode);
+            if (!bestRoute) return [];
+            routes.push(bestRoute);
+
+            const potentialRoutes = [];
+
+            for (let i = 1; i < k; i++) {
+                const prevRoute = routes[i - 1];
+                for (let j = 0; j < prevRoute.path.length - 1; j++) {
+                    const spurNode = prevRoute.path[j];
+                    const rootPath = prevRoute.path.slice(0, j + 1);
+
+                    // Temporarily remove edges used by existing routes at this spur
+                    const removedEdges = [];
+                    routes.forEach(route => {
+                        if (route.path.length > j + 1 &&
+                            route.path.slice(0, j + 1).join(",") === rootPath.join(",")) {
+                            // Mark edge to skip
+                            removedEdges.push({ from: route.path[j], to: route.path[j + 1] });
+                        }
+                    });
+
+                    // Simple alternative: add penalty to used edges
+                    const origTraffic = {};
+                    removedEdges.forEach(re => {
+                        NASHIK_EDGES.forEach(edge => {
+                            if ((edge.from === re.from && edge.to === re.to) ||
+                                (edge.from === re.to && edge.to === re.from)) {
+                                const t = trafficMap[edge.segment_id];
+                                if (t) {
+                                    origTraffic[edge.segment_id] = t.effective_travel_time;
+                                    t.effective_travel_time = t.effective_travel_time * 5;
+                                }
+                            }
+                        });
+                    });
+
+                    const spurRoute = dijkstraClientSide(spurNode, destNode);
+
+                    // Restore
+                    for (const [sid, origTime] of Object.entries(origTraffic)) {
+                        if (trafficMap[sid]) trafficMap[sid].effective_travel_time = origTime;
+                    }
+
+                    if (spurRoute && spurRoute.path.length > 1) {
+                        const totalPath = rootPath.slice(0, -1).concat(spurRoute.path);
+                        // Check for loops
+                        if (new Set(totalPath).size === totalPath.length) {
+                            // Rebuild full route
+                            const fullRoute = dijkstraPathForSequence(totalPath);
+                            if (fullRoute) {
+                                const exists = potentialRoutes.some(r => r.path.join(",") === fullRoute.path.join(","));
+                                const existsInRoutes = routes.some(r => r.path.join(",") === fullRoute.path.join(","));
+                                if (!exists && !existsInRoutes) {
+                                    potentialRoutes.push(fullRoute);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (potentialRoutes.length === 0) break;
+                potentialRoutes.sort((a, b) => a.total_time - b.total_time);
+                routes.push(potentialRoutes.shift());
+            }
+
+            return routes;
+        }
+
+        function dijkstraPathForSequence(path) {
+            let totalTime = 0;
+            const segments = [];
+
+            for (let i = 0; i < path.length - 1; i++) {
+                const edge = NASHIK_EDGES.find(e =>
+                    (e.from === path[i] && e.to === path[i + 1]) ||
+                    (e.to === path[i] && e.from === path[i + 1])
+                );
+                if (!edge) return null;
+
+                const t = trafficMap[edge.segment_id];
+                const congestion = t ? t.congestion_score : 0.3;
+                const effTime = t ? t.effective_travel_time : edge.base_travel_time * 1.3;
+                totalTime += effTime;
+
+                segments.push({
+                    from: path[i],
+                    to: path[i + 1],
+                    road_name: edge.road_name,
+                    segment_id: edge.segment_id,
+                    base_travel_time: edge.base_travel_time,
+                    congestion_score: congestion,
+                    effective_travel_time: effTime,
+                    geometry: []
+                });
+            }
+
+            return {
+                path,
+                total_time: totalTime,
+                segments,
+                road_names: segments.map(s => s.road_name)
+            };
+        }
+
+        // ============================================
+        // OPTIMIZE ROUTE
+        // ============================================
         async function optimizeRoute(silent = false) {
-            const source = document.getElementById("sourceSelect").value;
-            const dest = document.getElementById("destSelect").value;
-            const time = document.getElementById("timeSelect").value;
-            const day = document.getElementById("daySelect").value;
-            const weather = document.getElementById("weatherSelect").value;
+            if (!selectedSource && !silent) return;
+            if (!selectedDest && !silent) return;
+
+            const source = silent && currentOptimizedData ? currentOptimizedData.path[0] : selectedSource.snappedNode;
+            const dest = silent && currentOptimizedData ? currentOptimizedData.path[currentOptimizedData.path.length - 1] : selectedDest.snappedNode;
 
             if (source === dest) return;
 
@@ -682,16 +1317,57 @@
             }
 
             try {
-                const res = await fetch(`${API_BASE}/optimize-route`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ source, destination: dest, time_of_day: parseInt(time), day_of_week: parseInt(day), weather })
-                });
-                
-                const routeData = await res.json();
-                
-                const altRes = await fetch(`${API_BASE}/all-routes?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(dest)}&time_of_day=${time}&day_of_week=${day}&weather=${weather}`);
-                const allRoutesData = altRes.ok ? await altRes.json() : null;
+                // Try API first
+                const time = document.getElementById("timeSelect").value;
+                const day = document.getElementById("daySelect").value;
+                const weather = document.getElementById("weatherSelect").value;
+
+                let routeData = null;
+                let allRoutesData = null;
+
+                try {
+                    const res = await fetch(`${API_BASE}/optimize-route`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            source,
+                            destination: dest,
+                            time_of_day: parseInt(time),
+                            day_of_week: parseInt(day),
+                            weather
+                        })
+                    });
+                    const apiData = await res.json();
+                    if (!apiData.error) {
+                        routeData = apiData;
+                    }
+                } catch (e) {
+                    // API unavailable, use client-side
+                }
+
+                // Fallback to client-side Dijkstra
+                if (!routeData) {
+                    routeData = dijkstraClientSide(source, dest);
+                }
+
+                if (!routeData) {
+                    console.error("No route found");
+                    return;
+                }
+
+                // Get alternatives
+                try {
+                    const altRes = await fetch(`${API_BASE}/all-routes?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(dest)}&time_of_day=${time}&day_of_week=${day}&weather=${weather}`);
+                    if (altRes.ok) {
+                        allRoutesData = await altRes.json();
+                    }
+                } catch (e) { /* ignore */ }
+
+                if (!allRoutesData || !allRoutesData.routes || allRoutesData.routes.length === 0) {
+                    // Client-side alternatives
+                    const clientRoutes = findKShortestClientSide(source, dest, 3);
+                    allRoutesData = { routes: clientRoutes };
+                }
 
                 currentOptimizedData = routeData;
                 currentAllRoutesData = allRoutesData;
@@ -709,26 +1385,49 @@
             }
         }
 
+        // ============================================
+        // RENDER UI (BOTTOM BAR)
+        // ============================================
         function renderUI(routeData, allRoutesData) {
             document.getElementById("resultPlaceholder").style.display = "none";
             document.getElementById("resultContent").style.display = "block";
 
             document.getElementById("routeTime").innerHTML = `${routeData.total_time.toFixed(0)} <span>min</span>`;
-            
+
+            // Breadcrumb path
             const pathHtml = routeData.path.map((n, i) => {
                 if (i === routeData.path.length - 1) return `<span>${n}</span>`;
                 return `<span>${n}</span> <span class="breadcrumb-arrow">→</span>`;
             }).join("");
             document.getElementById("routePath").innerHTML = pathHtml;
 
+            // Via line
+            const roadNames = routeData.segments
+                ? [...new Set(routeData.segments.map(s => s.road_name))]
+                : (routeData.road_names || []);
+            document.getElementById("routeVia").textContent = roadNames.length > 0
+                ? `via ${roadNames.slice(0, 3).join(", ")}`
+                : "";
+
+            // Save line
             const saveLine = document.getElementById("routeSave");
             let slowestTime = routeData.total_time;
-            
+
+            // Arrival time
+            const now = new Date();
+            const arrivalMs = now.getTime() + routeData.total_time * 60000;
+            const arrival = new Date(arrivalMs);
+            let ah = arrival.getHours();
+            const am = arrival.getMinutes().toString().padStart(2, '0');
+            const aAmpm = ah >= 12 ? 'PM' : 'AM';
+            ah = ah % 12 || 12;
+            document.getElementById("routeArrival").textContent = `Arrives at ${ah}:${am} ${aAmpm}`;
+
+            // Alternatives
             const altContainer = document.getElementById("altList");
             altContainer.innerHTML = "";
 
             if (allRoutesData && allRoutesData.routes && allRoutesData.routes.length > 1) {
-                // Determine slowest alternative
                 slowestTime = allRoutesData.routes[allRoutesData.routes.length - 1].total_time;
                 const saved = (slowestTime - routeData.total_time).toFixed(0);
                 if (saved > 0) {
@@ -737,76 +1436,92 @@
                     saveLine.textContent = "";
                 }
 
-                // Render alternatives (up to 2)
                 const alts = allRoutesData.routes.slice(1, 3);
                 alts.forEach((alt, idx) => {
                     const avgCongestion = alt.segments.reduce((acc, s) => acc + s.congestion_score, 0) / alt.segments.length;
                     const badgeClass = getCongestionBadgeClass(avgCongestion);
                     const badgeText = getCongestionText(avgCongestion);
-                    
-                    const actualIdx = idx + 1; // 1 or 2 since 0 is optimal
+
+                    const actualIdx = idx + 1;
                     const isActive = selectedAltRouteIdx === actualIdx ? "active" : "";
+                    const altPathStr = alt.path.join(" → ");
 
                     altContainer.innerHTML += `
                         <div class="alt-card ${isActive}" onclick="selectAlternative(${actualIdx})">
-                            <div class="alt-info">
-                                <span class="alt-name">Alternative ${actualIdx}</span>
-                                <span class="alt-time">${alt.total_time.toFixed(1)} min</span>
+                            <div class="alt-card-header">
+                                <div class="alt-info">
+                                    <span class="alt-name">Alternative ${actualIdx}</span>
+                                    <span class="alt-time">${alt.total_time.toFixed(1)} min</span>
+                                </div>
+                                <span class="cong-badge ${badgeClass}">${badgeText}</span>
                             </div>
-                            <span class="cong-badge ${badgeClass}">${badgeText}</span>
+                            <div class="alt-path">${altPathStr}</div>
                         </div>
                     `;
                 });
             } else {
                 saveLine.textContent = "";
-                altContainer.innerHTML = '<div style="font-size: 12px; color: var(--text-muted);">No alternatives found.</div>';
+                altContainer.innerHTML = '<div class="alt-empty">No alternatives found.</div>';
             }
         }
 
+        function resetResultUI() {
+            document.getElementById("resultPlaceholder").style.display = "flex";
+            document.getElementById("resultContent").style.display = "none";
+            document.getElementById("altList").innerHTML = '<div class="alt-empty">No alternatives calculated.</div>';
+        }
+
+        // ============================================
+        // SELECT ALTERNATIVE ROUTE
+        // ============================================
         function selectAlternative(idx) {
             if (!currentAllRoutesData || !currentAllRoutesData.routes[idx]) return;
             selectedAltRouteIdx = idx;
-            
-            // Re-render UI to update active state
             renderUI(currentOptimizedData, currentAllRoutesData);
-            
-            // Draw selected route
-            const isAlt = idx !== 0;
-            drawPathOnMap(currentAllRoutesData.routes[idx], isAlt);
+            drawPathOnMap(currentAllRoutesData.routes[idx], true);
+        }
+
+        // ============================================
+        // DRAW ROUTE ON MAP
+        // ============================================
+        function clearRouteFromMap() {
+            optimizedRouteLayers.forEach(l => map.removeLayer(l));
+            optimizedRouteLayers = [];
         }
 
         function drawPathOnMap(routeData, isAlternative) {
-            optimizedRouteLayers.forEach(l => map.removeLayer(l));
-            optimizedRouteLayers = [];
+            clearRouteFromMap();
 
-            if (!graphData) return;
-
-            const nodeMap = {};
-            graphData.nodes.forEach(n => nodeMap[n.name] = n);
+            // Remove search markers during route display — replace with route markers
+            if (sourceMarker) { map.removeLayer(sourceMarker); sourceMarker = null; }
+            if (destMarker) { map.removeLayer(destMarker); destMarker = null; }
 
             let coords = [];
-            routeData.segments.forEach((seg, idx) => {
-                const geom = seg.geometry && seg.geometry.length > 0 
-                    ? seg.geometry.map(c => [c[0], c[1]]) 
-                    : [[nodeMap[seg.from].lat, nodeMap[seg.from].lon], [nodeMap[seg.to].lat, nodeMap[seg.to].lon]];
-                
-                const fN = nodeMap[seg.from];
-                if (geom.length > 0) {
-                    const d1 = Math.hypot(geom[0][0]-fN.lat, geom[0][1]-fN.lon);
-                    const d2 = Math.hypot(geom[geom.length-1][0]-fN.lat, geom[geom.length-1][1]-fN.lon);
-                    if (d2 < d1) geom.reverse();
-                }
+            routeData.segments.forEach((seg) => {
+                const fromCoords = NASHIK_NODES[seg.from];
+                const toCoords = NASHIK_NODES[seg.to];
+                if (!fromCoords || !toCoords) return;
 
-                if (idx === 0) coords.push(...geom);
-                else coords.push(...geom.slice(1));
+                coords.push([fromCoords[0], fromCoords[1]]);
+                coords.push([toCoords[0], toCoords[1]]);
             });
 
-            const pathColor = isAlternative ? "var(--accent-purple)" : "var(--accent-blue)";
+            // Deduplicate consecutive same points
+            const cleanCoords = [coords[0]];
+            for (let i = 1; i < coords.length; i++) {
+                const prev = cleanCoords[cleanCoords.length - 1];
+                if (coords[i][0] !== prev[0] || coords[i][1] !== prev[1]) {
+                    cleanCoords.push(coords[i]);
+                }
+            }
+            coords = cleanCoords;
+
+            const pathColor = isAlternative ? "#8b5cf6" : "#3b82f6";
 
             // Glow underlay
             const glow = L.polyline(coords, {
                 color: pathColor,
-                weight: 10,
+                weight: 12,
                 opacity: 0.2,
                 lineJoin: "round",
                 lineCap: "round"
@@ -816,14 +1531,15 @@
             // Animated dashed line
             const flow = L.polyline(coords, {
                 color: pathColor,
-                weight: 4,
+                weight: 6,
                 opacity: 0.9,
-                dashArray: "12, 12",
+                dashArray: "10, 8",
                 lineJoin: "round",
                 lineCap: "round"
             }).addTo(map);
             optimizedRouteLayers.push(flow);
 
+            // Animate dashes
             let offset = 0;
             function animate() {
                 if (!flow._map) return;
@@ -833,13 +1549,83 @@
             }
             animate();
 
+            // Direction arrows along route
+            for (let i = 0; i < coords.length - 1; i++) {
+                const midLat = (coords[i][0] + coords[i + 1][0]) / 2;
+                const midLng = (coords[i][1] + coords[i + 1][1]) / 2;
+                const angle = Math.atan2(coords[i + 1][1] - coords[i][1], coords[i + 1][0] - coords[i][0]) * 180 / Math.PI;
+
+                const arrowIcon = L.divIcon({
+                    html: `<div style="transform: rotate(${90 - angle}deg); color: ${pathColor}; font-size: 16px; font-weight: 900; text-shadow: 0 0 4px rgba(0,0,0,0.6);">▲</div>`,
+                    className: '',
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                });
+
+                const arrowMarker = L.marker([midLat, midLng], { icon: arrowIcon, interactive: false }).addTo(map);
+                optimizedRouteLayers.push(arrowMarker);
+            }
+
+            // Start Marker (blue)
+            const startNode = routeData.path[0];
+            const startCoords = NASHIK_NODES[startNode];
+            if (startCoords) {
+                const sm = L.circleMarker([startCoords[0], startCoords[1]], {
+                    radius: 9,
+                    fillColor: "#3b82f6",
+                    fillOpacity: 1,
+                    color: "#ffffff",
+                    weight: 3
+                }).addTo(map);
+                sm.bindTooltip("START", {
+                    permanent: true,
+                    direction: "bottom",
+                    className: "route-start-badge",
+                    offset: [0, 8]
+                }).openTooltip();
+                optimizedRouteLayers.push(sm);
+            }
+
+            // End Marker (green)
+            const endNode = routeData.path[routeData.path.length - 1];
+            const endCoords = NASHIK_NODES[endNode];
+            if (endCoords) {
+                const em = L.circleMarker([endCoords[0], endCoords[1]], {
+                    radius: 9,
+                    fillColor: "#10b981",
+                    fillOpacity: 1,
+                    color: "#ffffff",
+                    weight: 3
+                }).addTo(map);
+                em.bindTooltip("END", {
+                    permanent: true,
+                    direction: "bottom",
+                    className: "route-end-badge",
+                    offset: [0, 8]
+                }).openTooltip();
+                optimizedRouteLayers.push(em);
+            }
+
             // Fit bounds
-            map.fitBounds(L.latLngBounds(coords), { padding: [40, 40], animate: true, duration: 1 });
+            if (coords.length > 1) {
+                map.fitBounds(L.latLngBounds(coords), { padding: [60, 60], animate: true, duration: 1 });
+            }
         }
 
+        // ============================================
+        // BOOT
+        // ============================================
         window.addEventListener("DOMContentLoaded", () => {
             initMap();
+            setupSearchListeners();
             loadInitialData();
+            updateLiveClock();
+
+            // Live clock update every second
+            setInterval(updateLiveClock, 1000);
+
+            // Auto-refresh traffic every 30 seconds
+            setInterval(silentRefreshTraffic, 30000);
         });
     </script>
 </body>
