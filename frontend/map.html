@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RouteAI &bull; Live Traffic Dashboard</title>
+
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-page: #0f0f0f;
+            --bg-panel: #111111;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --radius-md: 12px;
+            --font-main: 'Inter', system-ui, sans-serif;
+            --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.5);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-page);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top 65% Map Area */
+        .map-section {
+            height: 65vh;
+            width: 100%;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        /* Floating Top Bar */
+        .top-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(17, 17, 17, 0.85);
+            backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .top-bar .logo {
+            font-weight: 800;
+            font-size: 14px;
+            color: white;
+            letter-spacing: -0.5px;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .live-text {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* Floating Controls */
+        .controls-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 12px;
+        }
+
+        .pill-select-wrapper {
+            position: relative;
+        }
+
+        .pill-select {
+            appearance: none;
+            background: rgba(17, 17, 17, 0.85);
+            backdrop-filter: blur(8px);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 8px 32px 8px 16px;
+            border-radius: 20px;
+            font-family: var(--font-main);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: var(--transition);
+        }
+
+        .pill-select:hover {
+            background: rgba(30, 30, 30, 0.95);
+        }
+
+        .pill-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .pill-select-wrapper::after {
+            content: "▾";
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            font-size: 10px;
+        }
+
+        /* Floating Legend */
+        .legend-overlay {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 16px;
+            background: transparent;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(17, 17, 17, 0.6);
+            backdrop-filter: blur(4px);
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .dot-low { background: var(--accent-green); }
+        .dot-med { background: var(--accent-orange); }
+        .dot-high { background: var(--accent-red); }
+
+        /* Bottom 35% Info Bar */
+        .bottom-bar {
+            height: 35vh;
+            background: var(--bg-panel);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+            z-index: 1100;
+            display: flex;
+            padding: 24px 32px;
+            gap: 32px;
+        }
+
+        /* Section Containers */
+        .section-left, .section-right { width: 28%; }
+        .section-middle { width: 44%; border-left: 1px solid rgba(255,255,255,0.05); border-right: 1px solid rgba(255,255,255,0.05); padding: 0 32px; display: flex; flex-direction: column; justify-content: center; }
+
+        /* Left Section: Route Selector */
+        .dropdown-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .select-group { flex: 1; }
+        
+        .select-group label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .dark-select {
+            width: 100%;
+            background: #1a1a1a;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            font-family: var(--font-main);
+            font-size: 14px;
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .dark-select:focus { border-color: var(--accent-blue); }
+
+        .btn-find {
+            width: 100%;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: var(--radius-md);
+            font-family: var(--font-main);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-find:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-find:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Middle Section: Best Route */
+        .placeholder-text {
+            color: var(--text-muted);
+            font-size: 16px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .result-content { display: none; }
+        
+        .optimal-badge {
+            display: inline-flex;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .time-display {
+            font-size: 42px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 16px;
+        }
+        
+        .time-display span { font-size: 20px; color: var(--text-muted); font-weight: 600; }
+
+        .breadcrumb-path {
+            font-size: 13px;
+            color: var(--text-main);
+            font-weight: 500;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        
+        .breadcrumb-arrow { color: var(--text-muted); font-size: 10px; }
+
+        .save-time-line {
+            font-size: 12px;
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        /* Right Section: Alternatives */
+        .section-right { display: flex; flex-direction: column; justify-content: center; }
+
+        .alt-title {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .alt-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .alt-card {
+            background: #1a1a1a;
+            border: 1px solid transparent;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alt-card:hover {
+            background: #222;
+        }
+
+        .alt-card.active {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .alt-info { display: flex; flex-direction: column; gap: 4px; }
+        .alt-name { font-size: 13px; font-weight: 600; color: white; }
+        .alt-time { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+        .cong-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+        .bg-low { background: rgba(16,185,129,0.1); color: var(--accent-green); }
+        .bg-med { background: rgba(245,158,11,0.1); color: var(--accent-orange); }
+        .bg-high { background: rgba(239,68,68,0.1); color: var(--accent-red); }
+
+        /* Leaflet popups & tooltips */
+        .leaflet-tooltip-styled {
+            background: rgba(17,17,17,0.9) !important;
+            border: none !important;
+            color: white !important;
+            font-family: var(--font-main) !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            padding: 4px 8px !important;
+            border-radius: 6px !important;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important;
+        }
+        .leaflet-tooltip-styled::before { display: none !important; }
+        .leaflet-popup-content-wrapper {
+            background: rgba(17,17,17,0.95) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+        }
+        .leaflet-popup-tip { background: rgba(17,17,17,0.95) !important; }
+        .popup-header { color: var(--accent-blue); font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="map-section">
+        <div id="map"></div>
+
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <span class="logo">RouteAI</span>
+            <div class="live-indicator">
+                <span class="pulse-dot"></span>
+                <span class="live-text">Live &bull; Pune</span>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-overlay">
+            <div class="pill-select-wrapper">
+                <select id="timeSelect" class="pill-select" onchange="handleControlChange()">
+                    <!-- Options injected by JS -->
+                </select>
+            </div>
+            <div class="pill-select-wrapper">
+                <select id="daySelect" class="pill-select" onchange="handleControlChange()">
+                    <option value="0">📅 Monday</option>
+                    <option value="1" selected>📅 Tuesday</option>
+                    <option value="2">📅 Wednesday</option>
+                    <option value="3">📅 Thursday</option>
+                    <option value="4">📅 Friday</option>
+                    <option value="5">📅 Saturday</option>
+                    <option value="6">📅 Sunday</option>
+                </select>
+            </div>
+            <div class="pill-select-wrapper">
+                <select id="weatherSelect" class="pill-select" onchange="handleControlChange()">
+                    <option value="clear">🌤 Clear</option>
+                    <option value="rain">🌧 Rain</option>
+                    <option value="fog">🌫 Fog</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend-overlay">
+            <div class="legend-item"><span class="legend-dot dot-low"></span> Low</div>
+            <div class="legend-item"><span class="legend-dot dot-med"></span> Medium</div>
+            <div class="legend-item"><span class="legend-dot dot-high"></span> High</div>
+        </div>
+    </div>
+
+    <div class="bottom-bar">
+        <!-- Left Section -->
+        <div class="section-left">
+            <div class="dropdown-row">
+                <div class="select-group">
+                    <label>Source</label>
+                    <select id="sourceSelect" class="dark-select"></select>
+                </div>
+                <div class="select-group">
+                    <label>Destination</label>
+                    <select id="destSelect" class="dark-select"></select>
+                </div>
+            </div>
+            <button id="optimizeBtn" class="btn-find" onclick="optimizeRoute()">Find Best Route</button>
+        </div>
+
+        <!-- Middle Section -->
+        <div class="section-middle">
+            <div id="resultPlaceholder" class="placeholder-text">Select route to optimize</div>
+            <div id="resultContent" class="result-content">
+                <span class="optimal-badge">Optimal Route</span>
+                <div id="routeTime" class="time-display">-- <span>min</span></div>
+                <div id="routePath" class="breadcrumb-path"></div>
+                <div id="routeSave" class="save-time-line"></div>
+            </div>
+        </div>
+
+        <!-- Right Section -->
+        <div class="section-right">
+            <div class="alt-title">Alternatives</div>
+            <div id="altList" class="alt-list">
+                <div style="font-size: 12px; color: var(--text-muted);">No alternatives calculated.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet.js script -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const API_BASE = "http://localhost:8000";
+        
+        let map = null;
+        let graphData = null;
+        let allTraffic = [];
+        
+        let nodeLayers = [];
+        let edgeLayers = [];
+        let optimizedRouteLayers = [];
+        
+        let currentOptimizedData = null;
+        let currentAllRoutesData = null;
+        let selectedAltRouteIdx = 0;
+
+        // Auto-refresh timer
+        setInterval(silentRefreshTraffic, 30000);
+
+        function initMap() {
+            map = L.map("map", {
+                center: [18.538, 73.845],
+                zoom: 12.5,
+                zoomControl: false,
+                attributionControl: false
+            });
+
+            L.tileLayer("https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png", {
+                maxZoom: 19
+            }).addTo(map);
+
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
+            populateTimeSelect();
+        }
+
+        function populateTimeSelect() {
+            const select = document.getElementById("timeSelect");
+            for(let i=0; i<24; i++) {
+                const ampm = i >= 12 ? 'PM' : 'AM';
+                const hr = i % 12 === 0 ? 12 : i % 12;
+                select.add(new Option(`🕐 Time: ${hr} ${ampm}`, i));
+            }
+            select.value = "8";
+        }
+
+        async function loadInitialData() {
+            try {
+                const res = await fetch(`${API_BASE}/graph-data`);
+                graphData = await res.json();
+                
+                populateDropdowns(graphData.nodes);
+                drawNodes(graphData.nodes);
+                
+                await silentRefreshTraffic();
+            } catch (err) {
+                console.error("Failed to load initial data:", err);
+            }
+        }
+
+        function populateDropdowns(nodes) {
+            const src = document.getElementById("sourceSelect");
+            const dst = document.getElementById("destSelect");
+            
+            const sorted = [...nodes].sort((a,b) => a.name.localeCompare(b.name));
+            
+            sorted.forEach(n => {
+                src.add(new Option(n.name, n.name));
+                dst.add(new Option(n.name, n.name));
+            });
+            
+            src.value = "Hinjewadi";
+            dst.value = "Hadapsar";
+        }
+
+        async function silentRefreshTraffic() {
+            try {
+                const time = document.getElementById("timeSelect").value;
+                const day = document.getElementById("daySelect").value;
+                const weather = document.getElementById("weatherSelect").value;
+
+                const res = await fetch(`${API_BASE}/traffic-status?time_of_day=${time}&day_of_week=${day}&weather=${weather}`);
+                const data = await res.json();
+
+                allTraffic = data.traffic.map(t => {
+                    const noise = (Math.random() - 0.5) * 0.1;
+                    return { ...t, congestion_score: Math.max(0, Math.min(1, t.congestion_score + noise)) };
+                });
+
+                drawRoadSegments(allTraffic);
+                
+                if (currentOptimizedData) {
+                    optimizeRoute(true);
+                }
+            } catch (err) {
+                console.error("Traffic fetch error", err);
+            }
+        }
+
+        function handleControlChange() {
+            silentRefreshTraffic();
+        }
+
+        function getCongestionColor(score) {
+            if (score <= 0.3) return "var(--accent-green)";
+            if (score <= 0.6) return "var(--accent-orange)";
+            return "var(--accent-red)";
+        }
+
+        function getCongestionBadgeClass(score) {
+            if (score <= 0.3) return "bg-low";
+            if (score <= 0.6) return "bg-med";
+            return "bg-high";
+        }
+
+        function getCongestionText(score) {
+            if (score <= 0.3) return "Low";
+            if (score <= 0.6) return "Medium";
+            return "High";
+        }
+
+        function drawNodes(nodes) {
+            nodeLayers.forEach(l => map.removeLayer(l));
+            nodeLayers = [];
+
+            nodes.forEach(node => {
+                const marker = L.circleMarker([node.lat, node.lon], {
+                    radius: 4,
+                    fillColor: "#0f0f0f",
+                    fillOpacity: 1,
+                    color: "rgba(255,255,255,0.8)",
+                    weight: 2
+                }).addTo(map);
+
+                marker.bindTooltip(node.name, {
+                    permanent: false,
+                    direction: "top",
+                    className: "leaflet-tooltip-styled"
+                });
+
+                nodeLayers.push(marker);
+            });
+        }
+
+        function drawRoadSegments(traffic) {
+            edgeLayers.forEach(l => map.removeLayer(l));
+            edgeLayers = [];
+
+            if (!graphData) return;
+
+            const nodeMap = {};
+            graphData.nodes.forEach(n => nodeMap[n.name] = n);
+
+            const trafficMap = {};
+            traffic.forEach(t => trafficMap[t.segment_id] = t);
+
+            graphData.edges.forEach(edge => {
+                const from = nodeMap[edge.from];
+                const to = nodeMap[edge.to];
+                if (!from || !to) return;
+
+                const score = trafficMap[edge.segment_id] ? trafficMap[edge.segment_id].congestion_score : 0.2;
+                const color = getCongestionColor(score);
+
+                const coords = edge.geometry && edge.geometry.length > 0
+                    ? edge.geometry.map(c => [c[0], c[1]])
+                    : [[from.lat, from.lon], [to.lat, to.lon]];
+
+                const polyline = L.polyline(coords, {
+                    color: color,
+                    weight: 3,
+                    opacity: 0.6,
+                    lineJoin: "round",
+                    lineCap: "round"
+                }).addTo(map);
+
+                polyline.bindPopup(`
+                    <div style="font-family: var(--font-main); font-size: 11px;">
+                        <div class="popup-header">${edge.road_name}</div>
+                        <div>Congestion: <span style="color: ${color}; font-weight:700;">${(score*100).toFixed(0)}%</span></div>
+                    </div>
+                `);
+
+                edgeLayers.push(polyline);
+            });
+        }
+
+        async function optimizeRoute(silent = false) {
+            const source = document.getElementById("sourceSelect").value;
+            const dest = document.getElementById("destSelect").value;
+            const time = document.getElementById("timeSelect").value;
+            const day = document.getElementById("daySelect").value;
+            const weather = document.getElementById("weatherSelect").value;
+
+            if (source === dest) return;
+
+            const btn = document.getElementById("optimizeBtn");
+            if (!silent) {
+                btn.textContent = "Calculating...";
+                btn.disabled = true;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/optimize-route`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ source, destination: dest, time_of_day: parseInt(time), day_of_week: parseInt(day), weather })
+                });
+                
+                const routeData = await res.json();
+                
+                const altRes = await fetch(`${API_BASE}/all-routes?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(dest)}&time_of_day=${time}&day_of_week=${day}&weather=${weather}`);
+                const allRoutesData = altRes.ok ? await altRes.json() : null;
+
+                currentOptimizedData = routeData;
+                currentAllRoutesData = allRoutesData;
+                selectedAltRouteIdx = 0;
+
+                renderUI(routeData, allRoutesData);
+                drawPathOnMap(routeData, false);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                if (!silent) {
+                    btn.textContent = "Find Best Route";
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        function renderUI(routeData, allRoutesData) {
+            document.getElementById("resultPlaceholder").style.display = "none";
+            document.getElementById("resultContent").style.display = "block";
+
+            document.getElementById("routeTime").innerHTML = `${routeData.total_time.toFixed(0)} <span>min</span>`;
+            
+            const pathHtml = routeData.path.map((n, i) => {
+                if (i === routeData.path.length - 1) return `<span>${n}</span>`;
+                return `<span>${n}</span> <span class="breadcrumb-arrow">→</span>`;
+            }).join("");
+            document.getElementById("routePath").innerHTML = pathHtml;
+
+            const saveLine = document.getElementById("routeSave");
+            let slowestTime = routeData.total_time;
+            
+            const altContainer = document.getElementById("altList");
+            altContainer.innerHTML = "";
+
+            if (allRoutesData && allRoutesData.routes && allRoutesData.routes.length > 1) {
+                // Determine slowest alternative
+                slowestTime = allRoutesData.routes[allRoutesData.routes.length - 1].total_time;
+                const saved = (slowestTime - routeData.total_time).toFixed(0);
+                if (saved > 0) {
+                    saveLine.textContent = `You save ${saved} min vs slowest route`;
+                } else {
+                    saveLine.textContent = "";
+                }
+
+                // Render alternatives (up to 2)
+                const alts = allRoutesData.routes.slice(1, 3);
+                alts.forEach((alt, idx) => {
+                    const avgCongestion = alt.segments.reduce((acc, s) => acc + s.congestion_score, 0) / alt.segments.length;
+                    const badgeClass = getCongestionBadgeClass(avgCongestion);
+                    const badgeText = getCongestionText(avgCongestion);
+                    
+                    const actualIdx = idx + 1; // 1 or 2 since 0 is optimal
+                    const isActive = selectedAltRouteIdx === actualIdx ? "active" : "";
+
+                    altContainer.innerHTML += `
+                        <div class="alt-card ${isActive}" onclick="selectAlternative(${actualIdx})">
+                            <div class="alt-info">
+                                <span class="alt-name">Alternative ${actualIdx}</span>
+                                <span class="alt-time">${alt.total_time.toFixed(1)} min</span>
+                            </div>
+                            <span class="cong-badge ${badgeClass}">${badgeText}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                saveLine.textContent = "";
+                altContainer.innerHTML = '<div style="font-size: 12px; color: var(--text-muted);">No alternatives found.</div>';
+            }
+        }
+
+        function selectAlternative(idx) {
+            if (!currentAllRoutesData || !currentAllRoutesData.routes[idx]) return;
+            selectedAltRouteIdx = idx;
+            
+            // Re-render UI to update active state
+            renderUI(currentOptimizedData, currentAllRoutesData);
+            
+            // Draw selected route
+            const isAlt = idx !== 0;
+            drawPathOnMap(currentAllRoutesData.routes[idx], isAlt);
+        }
+
+        function drawPathOnMap(routeData, isAlternative) {
+            optimizedRouteLayers.forEach(l => map.removeLayer(l));
+            optimizedRouteLayers = [];
+
+            if (!graphData) return;
+
+            const nodeMap = {};
+            graphData.nodes.forEach(n => nodeMap[n.name] = n);
+
+            let coords = [];
+            routeData.segments.forEach((seg, idx) => {
+                const geom = seg.geometry && seg.geometry.length > 0 
+                    ? seg.geometry.map(c => [c[0], c[1]]) 
+                    : [[nodeMap[seg.from].lat, nodeMap[seg.from].lon], [nodeMap[seg.to].lat, nodeMap[seg.to].lon]];
+                
+                const fN = nodeMap[seg.from];
+                if (geom.length > 0) {
+                    const d1 = Math.hypot(geom[0][0]-fN.lat, geom[0][1]-fN.lon);
+                    const d2 = Math.hypot(geom[geom.length-1][0]-fN.lat, geom[geom.length-1][1]-fN.lon);
+                    if (d2 < d1) geom.reverse();
+                }
+
+                if (idx === 0) coords.push(...geom);
+                else coords.push(...geom.slice(1));
+            });
+
+            const pathColor = isAlternative ? "var(--accent-purple)" : "var(--accent-blue)";
+
+            // Glow underlay
+            const glow = L.polyline(coords, {
+                color: pathColor,
+                weight: 10,
+                opacity: 0.2,
+                lineJoin: "round",
+                lineCap: "round"
+            }).addTo(map);
+            optimizedRouteLayers.push(glow);
+
+            // Animated dashed line
+            const flow = L.polyline(coords, {
+                color: pathColor,
+                weight: 4,
+                opacity: 0.9,
+                dashArray: "12, 12",
+                lineJoin: "round",
+                lineCap: "round"
+            }).addTo(map);
+            optimizedRouteLayers.push(flow);
+
+            let offset = 0;
+            function animate() {
+                if (!flow._map) return;
+                offset -= 0.8;
+                flow.setStyle({ dashOffset: offset });
+                requestAnimationFrame(animate);
+            }
+            animate();
+
+            // Fit bounds
+            map.fitBounds(L.latLngBounds(coords), { padding: [40, 40], animate: true, duration: 1 });
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            initMap();
+            loadInitialData();
+        });
+    </script>
+</body>
+</html>
