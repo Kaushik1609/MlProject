@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
     <!-- Toast Container -->
@@ -92,19 +92,22 @@
         <div class="settings-drawer-overlay" id="settingsDrawerOverlay" onclick="closeSettingsDrawer()"></div>
         <div class="settings-drawer" id="settingsDrawer">
             <div class="settings-drawer-handle"></div>
-            <div class="settings-drawer-title">Settings</div>
+            <div class="settings-drawer-header">
+                <div class="settings-drawer-title">Settings</div>
+                <button class="drawer-close-btn" onclick="closeSettingsDrawer()">&times;</button>
+            </div>
             <div class="settings-drawer-controls">
                 <div class="drawer-control-group">
-                    <label>Time</label>
-                    <div class="pill-select-wrapper">
-                        <select id="drawerTimeSelect" class="pill-select" onchange="syncDrawerControl('time')">
-                        </select>
+                    <div class="drawer-control-header">
+                        <label>Time</label>
+                        <span id="drawerTimeValue" class="drawer-value-display">8:00 AM</span>
                     </div>
+                    <input type="range" id="drawerTimeRange" min="0" max="23" value="8" class="drawer-slider" oninput="updateDrawerTimeLabel(this.value)">
                 </div>
                 <div class="drawer-control-group">
                     <label>Day</label>
                     <div class="pill-select-wrapper">
-                        <select id="drawerDaySelect" class="pill-select" onchange="syncDrawerControl('day')">
+                        <select id="drawerDaySelect" class="pill-select">
                             <option value="0">📅 Monday</option>
                             <option value="1" selected>📅 Tuesday</option>
                             <option value="2">📅 Wednesday</option>
@@ -118,7 +121,7 @@
                 <div class="drawer-control-group">
                     <label>Weather</label>
                     <div class="pill-select-wrapper">
-                        <select id="drawerWeatherSelect" class="pill-select" onchange="syncDrawerControl('weather')">
+                        <select id="drawerWeatherSelect" class="pill-select">
                             <option value="clear">🌤 Clear</option>
                             <option value="rain">🌧 Rain</option>
                             <option value="fog">🌫 Fog</option>
@@ -132,7 +135,7 @@
                 <div class="drawer-control-group">
                     <label>Algorithm</label>
                     <div class="pill-select-wrapper">
-                        <select id="drawerAlgorithmSelect" class="pill-select" onchange="syncDrawerControl('algorithm')">
+                        <select id="drawerAlgorithmSelect" class="pill-select">
                             <option value="dijkstra">🧮 Dijkstra</option>
                             <option value="rl">🤖 Q-Learning RL</option>
                         </select>
@@ -1746,9 +1749,23 @@
         // ============================================
         // MOBILE SETTINGS DRAWER
         // ============================================
+        function formatHour(h) {
+            h = parseInt(h);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const hr = h % 12 === 0 ? 12 : h % 12;
+            return `${hr}:00 ${ampm}`;
+        }
+
+        function updateDrawerTimeLabel(val) {
+            document.getElementById('drawerTimeValue').textContent = formatHour(val);
+        }
+
         function openSettingsDrawer() {
             // Sync drawer controls from main controls
-            document.getElementById('drawerTimeSelect').value = document.getElementById('timeSelect').value;
+            const mainTime = document.getElementById('timeSelect').value;
+            document.getElementById('drawerTimeRange').value = mainTime;
+            updateDrawerTimeLabel(mainTime);
+
             document.getElementById('drawerDaySelect').value = document.getElementById('daySelect').value;
             document.getElementById('drawerWeatherSelect').value = document.getElementById('weatherSelect').value;
             document.getElementById('drawerAlgorithmSelect').value = document.getElementById('algorithmSelect').value;
@@ -1763,18 +1780,6 @@
             document.getElementById('settingsDrawerOverlay').classList.remove('open');
         }
 
-        function syncDrawerControl(type) {
-            if (type === 'time') {
-                document.getElementById('timeSelect').value = document.getElementById('drawerTimeSelect').value;
-            } else if (type === 'day') {
-                document.getElementById('daySelect').value = document.getElementById('drawerDaySelect').value;
-            } else if (type === 'weather') {
-                document.getElementById('weatherSelect').value = document.getElementById('drawerWeatherSelect').value;
-            } else if (type === 'algorithm') {
-                document.getElementById('algorithmSelect').value = document.getElementById('drawerAlgorithmSelect').value;
-            }
-        }
-
         function syncDrawerHeatmap() {
             const drawerBtn = document.getElementById('drawerHeatmapBtn');
             if (heatmapActive) {
@@ -1786,22 +1791,13 @@
 
         function applyAndCloseDrawer() {
             // Sync all drawer values to main controls
-            syncDrawerControl('time');
-            syncDrawerControl('day');
-            syncDrawerControl('weather');
-            syncDrawerControl('algorithm');
+            document.getElementById('timeSelect').value = document.getElementById('drawerTimeRange').value;
+            document.getElementById('daySelect').value = document.getElementById('drawerDaySelect').value;
+            document.getElementById('weatherSelect').value = document.getElementById('drawerWeatherSelect').value;
+            document.getElementById('algorithmSelect').value = document.getElementById('drawerAlgorithmSelect').value;
+            
             handleControlChange();
             closeSettingsDrawer();
-        }
-
-        function populateDrawerTimeSelect() {
-            const select = document.getElementById('drawerTimeSelect');
-            for (let i = 0; i < 24; i++) {
-                const ampm = i >= 12 ? 'PM' : 'AM';
-                const hr = i % 12 === 0 ? 12 : i % 12;
-                select.add(new Option(`🕐 Time: ${hr} ${ampm}`, i));
-            }
-            select.value = "8";
         }
 
         // ============================================
@@ -1812,7 +1808,6 @@
             setupSearchListeners();
             loadInitialData();
             updateLiveClock();
-            populateDrawerTimeSelect();
 
             // Live clock update every second
             setInterval(updateLiveClock, 1000);
@@ -1829,6 +1824,8 @@
                 const res = await fetch(`${API_BASE}/rl-status`);
                 const data = await res.json();
                 rlAvailable = data.rl_available;
+                
+                // Desktop algorithm option
                 const rlOption = document.querySelector('#algorithmSelect option[value="rl"]');
                 if (rlOption) {
                     if (!rlAvailable) {
@@ -1837,6 +1834,18 @@
                     } else {
                         rlOption.textContent = `🤖 Q-Learning RL (${data.q_table_entries.toLocaleString()} states)`;
                         rlOption.disabled = false;
+                    }
+                }
+                
+                // Drawer algorithm option
+                const drawerRlOption = document.querySelector('#drawerAlgorithmSelect option[value="rl"]');
+                if (drawerRlOption) {
+                    if (!rlAvailable) {
+                        drawerRlOption.textContent = '🤖 Q-Learning RL (not trained)';
+                        drawerRlOption.disabled = true;
+                    } else {
+                        drawerRlOption.textContent = `🤖 Q-Learning RL (${data.q_table_entries.toLocaleString()} states)`;
+                        drawerRlOption.disabled = false;
                     }
                 }
             } catch (e) {

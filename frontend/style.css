@@ -1240,11 +1240,32 @@ body {
     margin: 0 auto 8px;
 }
 
+.settings-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
 .settings-drawer-title {
     font-size: 16px;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 4px;
+}
+
+.drawer-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+    transition: var(--transition);
+    padding: 4px;
+}
+
+.drawer-close-btn:hover {
+    color: var(--text-primary);
 }
 
 .settings-drawer-controls {
@@ -1259,12 +1280,55 @@ body {
     gap: 6px;
 }
 
+.drawer-control-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .drawer-control-group label {
     font-size: 10px;
     color: var(--text-muted);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.drawer-value-display {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.drawer-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #222;
+    outline: none;
+    margin: 10px 0;
+}
+
+.drawer-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    transition: var(--transition);
+}
+
+.drawer-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    background: #2563eb;
 }
 
 .drawer-control-group .pill-select,
@@ -1365,9 +1429,20 @@ body {
         display: none !important;
     }
 
-    /* Show mobile settings button */
+    /* Show mobile settings button and position it top-right */
     .mobile-settings-btn {
-        display: flex;
+        display: flex !important;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        font-size: 16px;
+        align-items: center;
+        justify-content: center;
+        z-index: 1001;
+        padding: 0;
     }
 
     /* Enable the drawer on mobile */
@@ -1375,17 +1450,35 @@ body {
         display: flex;
     }
 
+    /* Minimalist top-bar on left: Logo + live pulse dot only */
     .top-bar {
         top: 10px;
         left: 10px;
-        padding: 6px 12px;
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 19px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
+    .top-bar .live-text,
+    .top-bar .last-updated-text {
+        display: none !important;
+    }
+
+    /* Compact live-clock to the left of Settings gear */
     .live-clock {
         top: 10px;
-        right: 10px;
-        padding: 6px 12px;
+        right: 54px; /* 38px gear button + 6px gap */
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 19px;
         font-size: 11px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        z-index: 1000;
     }
 
     .legend-overlay {
@@ -1404,12 +1497,6 @@ body {
 
     .time-display span {
         font-size: 16px;
-    }
-
-    /* Position mobile settings button away from clock */
-    .mobile-settings-btn {
-        right: 56px;
-        top: 10px;
     }
 
     .traffic-warning-banner {
