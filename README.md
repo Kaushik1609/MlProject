@@ -1,4 +1,4 @@
-# Dynamic Route Rationalization Model (SIH1617)
+# Dynamic Route Rationalization Model 
 
 > AI-powered traffic route optimization using Machine Learning and real-time road parameters for Indian city road networks.
 
