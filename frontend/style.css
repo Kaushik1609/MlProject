@@ -183,12 +183,7 @@ body {
 
 /* Time/Day/Weather pills — moved below clock */
 .controls-overlay {
-    position: absolute;
-    top: 64px;
-    right: 20px;
-    z-index: 1000;
-    display: flex;
-    gap: 12px;
+    display: none !important;
 }
 
 .pill-select-wrapper {
@@ -1163,7 +1158,7 @@ body {
    Mobile Settings Button
    ======================== */
 .mobile-settings-btn {
-    display: none; /* hidden on desktop */
+    display: flex;
     position: absolute;
     top: 10px;
     right: 60px;
@@ -1209,7 +1204,7 @@ body {
    Settings Drawer
    ======================== */
 .settings-drawer {
-    display: none; /* hidden on desktop */
+    display: flex;
     position: fixed;
     bottom: 0;
     left: 0;
