@@ -45,31 +45,17 @@
             </div>
         </div>
 
-        <!-- Live Clock -->
+        <!-- Live Clock & Context -->
         <div class="live-clock">
             <span class="clock-icon">🕐</span>
             <span id="liveClock">--:-- --</span>
+            <span class="context-separator">•</span>
+            <span id="liveDay" class="live-day-label">--</span>
         </div>
 
         <!-- Controls -->
         <div class="controls-overlay">
             <button id="heatmapBtn" class="pill-btn" onclick="toggleHeatmap()">🔥 Heatmap</button>
-            <div class="pill-select-wrapper">
-                <select id="timeSelect" class="pill-select" onchange="handleControlChange()">
-                    <!-- Options injected by JS -->
-                </select>
-            </div>
-            <div class="pill-select-wrapper">
-                <select id="daySelect" class="pill-select" onchange="handleControlChange()">
-                    <option value="0">📅 Monday</option>
-                    <option value="1" selected>📅 Tuesday</option>
-                    <option value="2">📅 Wednesday</option>
-                    <option value="3">📅 Thursday</option>
-                    <option value="4">📅 Friday</option>
-                    <option value="5">📅 Saturday</option>
-                    <option value="6">📅 Sunday</option>
-                </select>
-            </div>
             <div class="pill-select-wrapper">
                 <select id="weatherSelect" class="pill-select" onchange="handleControlChange()">
                     <option value="clear">🌤 Clear</option>
@@ -98,24 +84,10 @@
             </div>
             <div class="settings-drawer-controls">
                 <div class="drawer-control-group">
-                    <div class="drawer-control-header">
-                        <label>Time</label>
-                        <span id="drawerTimeValue" class="drawer-value-display">8:00 AM</span>
-                    </div>
-                    <input type="range" id="drawerTimeRange" min="0" max="23" value="8" class="drawer-slider" oninput="updateDrawerTimeLabel(this.value)">
-                </div>
-                <div class="drawer-control-group">
-                    <label>Day</label>
-                    <div class="pill-select-wrapper">
-                        <select id="drawerDaySelect" class="pill-select">
-                            <option value="0">📅 Monday</option>
-                            <option value="1" selected>📅 Tuesday</option>
-                            <option value="2">📅 Wednesday</option>
-                            <option value="3">📅 Thursday</option>
-                            <option value="4">📅 Friday</option>
-                            <option value="5">📅 Saturday</option>
-                            <option value="6">📅 Sunday</option>
-                        </select>
+                    <label>Current Context</label>
+                    <div class="drawer-live-context">
+                        <span class="drawer-context-icon">🕐</span>
+                        <span id="drawerLiveContext">Auto-detecting...</span>
                     </div>
                 </div>
                 <div class="drawer-control-group">
@@ -342,7 +314,6 @@
             }).addTo(map);
 
             L.control.zoom({ position: 'bottomleft' }).addTo(map);
-            populateTimeSelect();
 
             // Right click / Long press to set destination
             map.on('contextmenu', async (e) => {
@@ -553,14 +524,24 @@
             }
         }
 
-        function populateTimeSelect() {
-            const select = document.getElementById("timeSelect");
-            for (let i = 0; i < 24; i++) {
-                const ampm = i >= 12 ? 'PM' : 'AM';
-                const hr = i % 12 === 0 ? 12 : i % 12;
-                select.add(new Option(`🕐 Time: ${hr} ${ampm}`, i));
-            }
-            select.value = "8";
+        // ============================================
+        // REAL-TIME HELPERS (replace manual selects)
+        // ============================================
+        const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const DAY_NAMES_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+        function getCurrentHour() {
+            return new Date().getHours();
+        }
+
+        function getCurrentDay() {
+            // JS: 0=Sun..6=Sat → Python/API: 0=Mon..6=Sun
+            const jsDay = new Date().getDay();
+            return jsDay === 0 ? 6 : jsDay - 1;
+        }
+
+        function getCurrentDayName() {
+            return DAY_NAMES[getCurrentDay()];
         }
 
         // ============================================
@@ -573,6 +554,12 @@
             const ampm = h >= 12 ? 'PM' : 'AM';
             h = h % 12 || 12;
             document.getElementById("liveClock").textContent = `${h}:${m} ${ampm}`;
+            // Update day label
+            const dayEl = document.getElementById("liveDay");
+            if (dayEl) dayEl.textContent = getCurrentDayName();
+            // Update drawer context if open
+            const drawerCtx = document.getElementById("drawerLiveContext");
+            if (drawerCtx) drawerCtx.textContent = `${getCurrentDayName()}, ${h}:${m} ${ampm}`;
         }
 
         // ============================================
@@ -881,8 +868,8 @@
 
         async function silentRefreshTraffic() {
             try {
-                const time = document.getElementById("timeSelect").value;
-                const day = document.getElementById("daySelect").value;
+                const time = getCurrentHour();
+                const day = getCurrentDay();
                 const weather = document.getElementById("weatherSelect").value;
 
                 const res = await fetch(`${API_BASE}/traffic-status?time_of_day=${time}&day_of_week=${day}&weather=${weather}`);
@@ -902,14 +889,14 @@
                 NASHIK_EDGES.forEach(edge => {
                     if (!trafficMap[edge.segment_id]) {
                         // Generate a plausible congestion from time-based heuristic
-                        const h = parseInt(time);
+                        const h = time;
                         let base = 0.3;
                         if (h >= 8 && h <= 10) base = 0.65;
                         else if (h >= 17 && h <= 20) base = 0.7;
                         else if (h >= 12 && h <= 14) base = 0.45;
                         else if (h >= 0 && h <= 5) base = 0.1;
 
-                        if (parseInt(day) >= 5) base *= 0.65;
+                        if (day >= 5) base *= 0.65;
                         if (weather === "rain") base = Math.min(1, base + 0.15);
                         else if (weather === "fog") base = Math.min(1, base + 0.1);
 
@@ -956,8 +943,8 @@
         }
 
         function generateSyntheticTraffic() {
-            const time = parseInt(document.getElementById("timeSelect").value);
-            const day = parseInt(document.getElementById("daySelect").value);
+            const time = getCurrentHour();
+            const day = getCurrentDay();
             const weather = document.getElementById("weatherSelect").value;
 
             trafficMap = {};
@@ -1392,9 +1379,9 @@
             }
 
             try {
-                // Try API first
-                const time = document.getElementById("timeSelect").value;
-                const day = document.getElementById("daySelect").value;
+                // Use real-time values
+                const time = getCurrentHour();
+                const day = getCurrentDay();
                 const weather = document.getElementById("weatherSelect").value;
 
                 let routeData = null;
@@ -1407,8 +1394,8 @@
                         body: JSON.stringify({
                             source,
                             destination: dest,
-                            time_of_day: parseInt(time),
-                            day_of_week: parseInt(day),
+                            time_of_day: time,
+                            day_of_week: day,
                             weather,
                             method: document.getElementById("algorithmSelect").value
                         })
@@ -1756,17 +1743,15 @@
             return `${hr}:00 ${ampm}`;
         }
 
-        function updateDrawerTimeLabel(val) {
-            document.getElementById('drawerTimeValue').textContent = formatHour(val);
-        }
-
         function openSettingsDrawer() {
-            // Sync drawer controls from main controls
-            const mainTime = document.getElementById('timeSelect').value;
-            document.getElementById('drawerTimeRange').value = mainTime;
-            updateDrawerTimeLabel(mainTime);
+            // Sync live context display
+            const now = new Date();
+            let h = now.getHours();
+            const m = now.getMinutes().toString().padStart(2, '0');
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            document.getElementById('drawerLiveContext').textContent = `${getCurrentDayName()}, ${h}:${m} ${ampm}`;
 
-            document.getElementById('drawerDaySelect').value = document.getElementById('daySelect').value;
             document.getElementById('drawerWeatherSelect').value = document.getElementById('weatherSelect').value;
             document.getElementById('drawerAlgorithmSelect').value = document.getElementById('algorithmSelect').value;
             syncDrawerHeatmap();
@@ -1790,9 +1775,7 @@
         }
 
         function applyAndCloseDrawer() {
-            // Sync all drawer values to main controls
-            document.getElementById('timeSelect').value = document.getElementById('drawerTimeRange').value;
-            document.getElementById('daySelect').value = document.getElementById('drawerDaySelect').value;
+            // Sync weather and algorithm from drawer to main controls
             document.getElementById('weatherSelect').value = document.getElementById('drawerWeatherSelect').value;
             document.getElementById('algorithmSelect').value = document.getElementById('drawerAlgorithmSelect').value;
             

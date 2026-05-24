@@ -181,6 +181,38 @@ body {
     font-size: 14px;
 }
 
+.context-separator {
+    color: var(--text-hint);
+    font-size: 10px;
+    margin: 0 2px;
+}
+
+.live-day-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    letter-spacing: 0.3px;
+}
+
+/* Drawer live context display */
+.drawer-live-context {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    letter-spacing: 0.3px;
+}
+
+.drawer-context-icon {
+    font-size: 16px;
+}
+
 /* Time/Day/Weather pills — moved below clock */
 .controls-overlay {
     display: none !important;
