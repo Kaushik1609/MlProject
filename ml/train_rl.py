@@ -286,10 +286,10 @@ if __name__ == "__main__":
     # Demo routes
     print(f"\n  Demo Routes:")
     print(f"  {'=' * 50}")
-    demo_route(env, Q, "CBS Chowk", "Mhasrul", time_of_day=9, weather="clear")
-    demo_route(env, Q, "Panchavati", "Nashik Road", time_of_day=18, weather="rain")
-    demo_route(env, Q, "Gangapur Road", "Deolali", time_of_day=12, weather="clear")
-    demo_route(env, Q, "Ambad", "Mumbai Naka", time_of_day=8, weather="fog")
+    demo_route(env, Q, "CBS", "Garware", time_of_day=9, weather="clear")
+    demo_route(env, Q, "Panchavati", "Nashik Road Rly Stn", time_of_day=18, weather="rain")
+    demo_route(env, Q, "Gangapur", "Deolali", time_of_day=12, weather="clear")
+    demo_route(env, Q, "Nandur Naka", "Mumbai Naka", time_of_day=8, weather="fog")
 
     # Save Q-table and stats
     joblib.dump(Q, q_table_path)

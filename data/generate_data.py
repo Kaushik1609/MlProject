@@ -11,14 +11,30 @@ import os
 # --- Road Segment Definitions ---
 # Each segment corresponds to an edge in the Nashik road network graph
 ROAD_SEGMENTS = {
-    1: 'MG Road', 2: 'Sharanpur Road', 3: 'CBS-Canada Road', 4: 'Old Pune Road',
-    5: 'Panchavati Road', 6: 'College Road', 7: 'Gangapur Road', 8: 'Indira Nagar Road',
-    9: 'Commissioner Office Road', 10: 'Nashik Phata Road', 11: 'Trimbak Road',
-    12: 'Mhasrul Road', 13: 'Nashik Phata Road', 14: 'Satpur Road', 15: 'Cidco Road',
-    16: 'Pathardi Road', 17: 'Dwarka-CBS Road', 18: 'Ambad Link Road', 19: 'MIDC Road',
-    20: 'Industrial Road', 21: 'Ambad-Phata Road', 22: 'Nashik-Mumbai Road',
-    23: 'Deolali Road', 24: 'Pathardi Road', 25: 'Agra Road', 26: 'Mhasrul Link',
-    27: 'Sharanpur Road', 28: 'Trimbak Road', 29: 'Pathardi Road', 30: 'Agra Road'
+    # Corridor 1 — Gangapur to Nandur Naka (11 segments)
+    1: 'Gangapur Link Road', 2: 'Jalapur Road', 3: 'Anandvalli Road',
+    4: 'Gangapur Road', 5: 'Gangapur Road Extension', 6: 'Trimbak Road',
+    7: 'Panchavati Road', 8: 'Nashik-Pune Road', 9: 'Dwarka Road',
+    10: 'Eastern Bypass', 11: 'Nandur Road',
+    # Corridor 2 — Western branch: Gangapur to Satpur Colony (5 segments)
+    12: 'Satpur Link Road', 13: 'Dhruv-Shramik Road', 14: 'Mahindra Road',
+    15: 'MIDC Link Road', 16: 'Satpur Road',
+    # Corridor 2 — Southern arc: Satpur Colony to CBS (7 segments)
+    17: 'MIDC Road', 18: 'Industrial Road', 19: 'ABB-Parijat Road',
+    20: 'Parijat Road', 21: 'Mumbai Naka Road', 22: 'Old Pune Road',
+    23: 'Garware Road',
+    # Feeder route — Dwarka Circle to Nashik Road Rly Stn (5 segments)
+    24: 'Samta Nagar Road', 25: 'Gandhi Nagar Road', 26: 'Nehru Road',
+    27: 'Datta Road', 28: 'Station Road',
+    # Cross-links & retained roads (22 segments)
+    29: 'MG Road', 30: 'College-Gangapur Road', 31: 'CBS Main Road',
+    32: 'Shivaji-MICO Road', 33: 'Shivaji-Sharda Road', 34: 'Sharanpur Road',
+    35: 'Nashik Phata Road', 36: 'Gangapur-Phata Road', 37: 'Deolali Road',
+    38: 'Mumbai-Sharda Road', 39: 'Dwarka-Parijat Road', 40: 'Ambad Link Road',
+    41: 'Shaneshwar-MIDC Road', 42: 'Kale-ABB Road', 43: 'Jehan-Parijat Road',
+    44: 'Gayatri-Samta Road', 45: 'Nandur-Station Road', 46: 'Mumbai-Gandhi Road',
+    47: 'Western Bypass', 48: 'College-Shivaji Road', 49: 'Dwarka-Mumbai Road',
+    50: 'Deolali-Samta Road',
 }
 
 WEATHER_OPTIONS = ["clear", "rain", "fog"]
